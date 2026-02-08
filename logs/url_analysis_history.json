@@ -1,0 +1,53 @@
+[
+  {
+    "url": "https://google.com",
+    "timestamp": "2026-02-08T23:00:39.653205",
+    "risk_score": 29,
+    "risk_level": "LOW",
+    "signals": [
+      {
+        "type": "domain_age",
+        "status": "ERROR",
+        "message": "can't subtract offset-naive and offset-aware datetimes"
+      },
+      {
+        "type": "ssl",
+        "status": "CRITICAL",
+        "message": "Invalid SSL certificate!"
+      },
+      {
+        "type": "url_pattern",
+        "status": "OK",
+        "message": "URL structure appears normal"
+      },
+      {
+        "type": "content",
+        "status": "OK",
+        "message": "Content appears normal"
+      },
+      {
+        "type": "dns",
+        "status": "OK",
+        "message": "Email configuration present"
+      }
+    ],
+    "domain_info": {},
+    "ssl_info": {
+      "valid": false
+    },
+    "content_info": {
+      "urgency_keywords_found": 0,
+      "forms_count": 1,
+      "password_fields": 0,
+      "external_scripts": 0
+    },
+    "dns_info": {
+      "mx_records": 1,
+      "has_spf": true
+    },
+    "recommendations": [
+      "Appears relatively safe"
+    ],
+    "domain": "google.com"
+  }
+]

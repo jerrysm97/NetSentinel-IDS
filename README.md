@@ -1,43 +1,73 @@
-# NetSentinel IDS
+# NetSentinel + Scam Sentinel
 
-A modular, security-hardened Intrusion Detection System using polymorphic design patterns.
+**Production-Ready Cybersecurity Command Center**
 
-## Security Features (v2.0)
+A modular Intrusion Detection System with integrated URL risk analyzer.
 
-- **LRU Eviction**: Prevents memory exhaustion attacks (max 10k entries)
-- **TTL Expiration**: Handles DHCP reassignment false positives
-- **Fast Path Analysis**: Byte search before regex (CPU optimization)
-- **Allowlist Filtering**: Ignore trusted IPs early
-- **Poison Pill Shutdown**: Clean thread termination
-- **Static Bindings**: Trusted IP-MAC pairs for critical infrastructure
+## Features
 
-## Monitors
+### NetSentinel IDS
+| Monitor | Detection | Security |
+|---------|-----------|----------|
+| SYN Flood | DoS attacks | LRU bounded counter |
+| Plaintext | Credential leaks | Fast byte search |
+| ARP Spoof | MITM attacks | TTL cache + trusted bindings |
 
-| Monitor | Detection | Security Fix |
-|---------|-----------|--------------|
-| SYN Flood | DoS attacks | Bounded counter with LRU |
-| Plaintext | Credential leaks | Fast byte search before regex |
-| ARP Spoof | MITM attacks | LRU cache + TTL + trusted bindings |
+### Scam Sentinel URL Analyzer
+- **Domain Age**: WHOIS analysis (new domains flagged)
+- **SSL Certificates**: Issuer validation
+- **Content Analysis**: Urgency keywords, scam patterns
+- **URL Patterns**: Suspicious structures detected
+- **DNS Configuration**: MX/SPF record checks
 
-## Installation
+## Quick Start
 
 ```bash
+# Setup
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
 
-## Usage
+# Run Dashboard (Browser Mode)
+python3 dashboard.py
+# Open http://localhost:8080
 
-### Console Mode (requires Linux + root)
-```bash
+# Run IDS Engine (Linux + root)
 sudo venv/bin/python3 src/main.py
 ```
 
-### Web Dashboard (Demo Mode)
-```bash
-venv/bin/python3 dashboard.py
-# Open http://localhost:5000
+## Dashboard
+
+The web dashboard provides:
+- 📊 Real-time IDS statistics
+- 🔍 URL risk analyzer with detailed signals
+- 🚨 Live alert feed with search
+- 📜 Analysis history tracking
+
+## Architecture
+
+```
+┌──────────────────────────────────────────┐
+│         Production Dashboard             │
+│  ┌──────────┐  ┌──────────┐  ┌────────┐ │
+│  │ Alerts   │  │ URL      │  │ History│ │
+│  │ Panel    │  │ Analyzer │  │ Panel  │ │
+│  └────┬─────┘  └────┬─────┘  └────────┘ │
+│       │             │                    │
+│       ▼             ▼                    │
+│  ┌────────────────────────────────────┐  │
+│  │     logs/alerts.json (shared)      │  │
+│  └────────────────────────────────────┘  │
+└──────────────────────────────────────────┘
+                    ▲
+                    │ Writes
+┌──────────────────────────────────────────┐
+│           NetSentinel IDS Engine         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ │
+│  │ SYN Flood│ │ Plaintext│ │ARP Spoof │ │
+│  │ Monitor  │ │ Monitor  │ │ Monitor  │ │
+│  └──────────┘ └──────────┘ └──────────┘ │
+└──────────────────────────────────────────┘
 ```
 
 ## Configuration
@@ -45,31 +75,19 @@ venv/bin/python3 dashboard.py
 Edit `config/allowlist.json`:
 ```json
 {
-    "trusted_ips": {
-        "192.168.1.1": "aa:bb:cc:dd:ee:ff"
-    },
+    "trusted_ips": {"192.168.1.1": "aa:bb:cc:dd:ee:ff"},
     "allowed_ips": ["127.0.0.1"]
 }
 ```
 
-## Project Structure
+## Security Hardening
 
-```
-NetSentinel/
-├── src/
-│   ├── main.py              # Entry point
-│   ├── netsentinel.py       # Core engine
-│   ├── threat_monitor.py    # Abstract base class
-│   ├── syn_flood_monitor.py # LRU-protected DoS detector
-│   ├── plaintext_monitor.py # Fast-path credential detector
-│   └── arp_spoof_monitor.py # TTL-cached MITM detector
-├── dashboard.py             # Web UI
-├── config/
-│   └── allowlist.json       # Trusted IPs/MACs
-├── tests/
-└── requirements.txt
-```
+- LRU eviction (max 10k entries)
+- TTL expiration (5 min cache)
+- Fast path analysis (byte search before regex)
+- Poison pill shutdown
+- Thread-safe logging
 
 ## License
 
-Educational use only. Monitor networks you own or have permission to access.
+Educational use. Only monitor networks you own.
