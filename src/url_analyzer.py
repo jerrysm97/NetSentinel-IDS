@@ -67,6 +67,19 @@ class TemporalAnalysis(TypedDict):
     domain_created: Optional[str]
     temporal_anomaly: Optional[str]
     history_fabrication: bool
+    content_shift_detected: bool
+    content_shift_detail: Optional[str]
+    old_category: Optional[str]
+    new_category: Optional[str]
+
+
+class CTLogAnalysis(TypedDict):
+    total_certs: int
+    first_cert_date: Optional[str]
+    recent_certs: List[str]
+    suspicious_subdomains: List[str]
+    rapid_issuance: bool
+    phishing_subdomain_pattern: bool
 
 
 class ContentClassification(TypedDict):
@@ -107,6 +120,7 @@ class OmniscientResult(TypedDict):
     threat_badges: List[str]
     network_intel: NetworkIntel
     temporal_analysis: TemporalAnalysis
+    ct_log_analysis: CTLogAnalysis
     content_classification: ContentClassification
     cognitive_analysis: CognitiveAnalysis
     psychological_analysis: PsychologicalAnalysis
@@ -260,6 +274,7 @@ class OmniscientAnalyzer:
         # Run all analysis modules concurrently
         network_task = asyncio.create_task(self._module_a_network_recon(domain, evidence_log))
         temporal_task = asyncio.create_task(self._module_b_temporal_forensics(domain, evidence_log))
+        ct_log_task = asyncio.create_task(self._module_e_ct_log_analysis(domain, evidence_log))
         
         # Fetch content first for other modules
         html_content, fetch_status = await self._fetch_with_retry(url, evidence_log)
@@ -276,6 +291,7 @@ class OmniscientAnalyzer:
         # Wait for async tasks
         network_result = await network_task
         temporal_result = await temporal_task
+        ct_log_result = await ct_log_task
         
         # Run content-dependent modules
         if soup:
@@ -313,6 +329,15 @@ class OmniscientAnalyzer:
         if network_result['is_bulletproof_host']:
             threat_badges.append("BULLETPROOF")
             evidence_log.append(">> 🛡️ THREAT BADGE: [BULLETPROOF] Abuse-Resistant Hosting")
+        if temporal_result['content_shift_detected']:
+            threat_badges.append("CONTENT-SHIFT")
+            evidence_log.append(">> 🔄 THREAT BADGE: [CONTENT-SHIFT] Business Category Changed")
+        if ct_log_result['phishing_subdomain_pattern']:
+            threat_badges.append("PHISH-KIT")
+            evidence_log.append(">> 🎣 THREAT BADGE: [PHISH-KIT] Automated Phishing Infrastructure")
+        if ct_log_result['rapid_issuance']:
+            threat_badges.append("RAPID-CERT")
+            evidence_log.append(">> ⚡ THREAT BADGE: [RAPID-CERT] Suspicious Certificate Timing")
         
         # Calculate composite risk score
         risk_score = self._calculate_risk_score(
@@ -351,6 +376,7 @@ class OmniscientAnalyzer:
             threat_badges=threat_badges,
             network_intel=network_result,
             temporal_analysis=temporal_result,
+            ct_log_analysis=ct_log_result,
             content_classification=content_result,
             cognitive_analysis=cognitive_result,
             psychological_analysis=psychological_result,
@@ -503,7 +529,11 @@ class OmniscientAnalyzer:
             'domain_age_days': None,
             'domain_created': None,
             'temporal_anomaly': None,
-            'history_fabrication': False
+            'history_fabrication': False,
+            'content_shift_detected': False,
+            'content_shift_detail': None,
+            'old_category': None,
+            'new_category': None
         }
         
         # Get domain WHOIS info
@@ -979,6 +1009,108 @@ class OmniscientAnalyzer:
             verdict='Unable to analyze'
         )
     
+    def _empty_ct_log_analysis(self) -> CTLogAnalysis:
+        return CTLogAnalysis(
+            total_certs=0,
+            first_cert_date=None,
+            recent_certs=[],
+            suspicious_subdomains=[],
+            rapid_issuance=False,
+            phishing_subdomain_pattern=False
+        )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODULE E: CERTIFICATE TRANSPARENCY LOG ANALYSIS
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    async def _module_e_ct_log_analysis(
+        self, 
+        domain: str, 
+        evidence_log: List[str]
+    ) -> CTLogAnalysis:
+        """Query crt.sh for Certificate Transparency logs."""
+        evidence_log.append(">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...")
+        
+        result: CTLogAnalysis = {
+            'total_certs': 0,
+            'first_cert_date': None,
+            'recent_certs': [],
+            'suspicious_subdomains': [],
+            'rapid_issuance': False,
+            'phishing_subdomain_pattern': False
+        }
+        
+        # Phishing-like subdomain patterns
+        phishing_patterns = [
+            r'login', r'signin', r'verify', r'secure', r'account', r'update',
+            r'confirm', r'validate', r'support', r'help', r'billing', r'payment',
+            r'paypal', r'amazon', r'apple', r'microsoft', r'google', r'facebook',
+            r'bank', r'wallet', r'crypto', r'refund', r'suspend'
+        ]
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                # Query crt.sh for certificates
+                ct_url = f'https://crt.sh/?q=%.{domain}&output=json'
+                async with session.get(ct_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        
+                        if data:
+                            result['total_certs'] = len(data)
+                            evidence_log.append(f">> [CT-LOG] Total Certificates: {len(data)}")
+                            
+                            # Sort by date to find first and recent
+                            sorted_certs = sorted(data, key=lambda x: x.get('entry_timestamp', ''))
+                            
+                            if sorted_certs:
+                                result['first_cert_date'] = sorted_certs[0].get('entry_timestamp', '')[:10]
+                                evidence_log.append(f">> [CT-LOG] First Cert: {result['first_cert_date']}")
+                                
+                                # Get recent certs (last 5)
+                                result['recent_certs'] = [
+                                    c.get('entry_timestamp', '')[:10] 
+                                    for c in sorted_certs[-5:]
+                                ]
+                            
+                            # Check for suspicious subdomains
+                            subdomains = set()
+                            for cert in data:
+                                name = cert.get('name_value', '').lower()
+                                for sub in name.split('\n'):
+                                    if sub and sub != domain:
+                                        subdomains.add(sub.replace(f'.{domain}', '').replace('*.', ''))
+                            
+                            # Detect phishing patterns in subdomains
+                            for sub in subdomains:
+                                for pattern in phishing_patterns:
+                                    if pattern in sub:
+                                        result['suspicious_subdomains'].append(sub)
+                                        break
+                            
+                            if result['suspicious_subdomains']:
+                                result['phishing_subdomain_pattern'] = True
+                                evidence_log.append(f">> [CT-LOG] ⚠️ PHISHING SUBDOMAINS: {result['suspicious_subdomains'][:5]}")
+                            
+                            # Check for rapid issuance (many certs in short time)
+                            if result['total_certs'] > 10 and result['first_cert_date']:
+                                # If domain is new (recent first cert) but has many certs
+                                first_date = result['first_cert_date']
+                                try:
+                                    first_dt = datetime.strptime(first_date, '%Y-%m-%d')
+                                    days_old = (datetime.now() - first_dt).days
+                                    if days_old < 7 and result['total_certs'] > 5:
+                                        result['rapid_issuance'] = True
+                                        evidence_log.append(f">> [CT-LOG] ⚠️ RAPID ISSUANCE: {result['total_certs']} certs in {days_old} days")
+                                except:
+                                    pass
+                        else:
+                            evidence_log.append(">> [CT-LOG] No certificates found")
+        except Exception as e:
+            evidence_log.append(f">> [CT-LOG] Query Error: {str(e)}")
+        
+        return result
+    
     def _error_result(
         self, 
         url: str, 
@@ -1001,8 +1133,11 @@ class OmniscientAnalyzer:
             temporal_analysis=TemporalAnalysis(
                 wayback_first_seen=None, wayback_last_seen=None, wayback_snapshot_count=0,
                 wayback_snapshots=[], domain_age_days=None, domain_created=None,
-                temporal_anomaly=None, history_fabrication=False
+                temporal_anomaly=None, history_fabrication=False,
+                content_shift_detected=False, content_shift_detail=None,
+                old_category=None, new_category=None
             ),
+            ct_log_analysis=self._empty_ct_log_analysis(),
             content_classification=self._empty_content_classification(),
             cognitive_analysis=self._empty_cognitive_analysis(domain),
             psychological_analysis=self._empty_psychological_analysis(),

@@ -1656,5 +1656,421 @@
     ],
     "timestamp": "2026-02-08T18:17:41.771759+00:00",
     "analysis_duration_ms": 3587
+  },
+  {
+    "url": "https://fullmovies4u.xyz/",
+    "domain": "fullmovies4u.xyz",
+    "risk_score": 36,
+    "category": "PIRACY/WAREZ",
+    "verdict": "LOW_RISK",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "172.67.194.244",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 3,
+      "domain_created": "2026-02-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 55,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "1080p",
+        "720p",
+        "4k",
+        "free download",
+        "movie",
+        "subtitles"
+      ],
+      "phishing_indicators": [
+        "brand mention: Facebook"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Hdhub4u South Movie Bollywood Hollywood Movie Web Series HQ Dub Movie Filmy4web all quality movie",
+      "h1_tags": [
+        "Hdhub4u Website is a Number 1 Website In india 2025 ?"
+      ],
+      "claimed_brands": [],
+      "domain": "fullmovies4u.xyz",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1463,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: fullmovies4u.xyz",
+      ">> Target URL: https://fullmovies4u.xyz/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [NETWORK] IP Resolved: 172.67.194.244",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (93994 bytes)",
+      ">> [TEMPORAL] Domain Created: 2026-02-05",
+      ">> [TEMPORAL] Domain Age: 3 days",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['1080p', '720p', '4k', 'free download', 'movie']",
+      ">> [PIRACY] Score: 55/100",
+      ">> [PHISHING] Indicators: ['brand mention: Facebook']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: LOW_RISK | Risk Score: 36/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:18:47.320935+00:00",
+    "analysis_duration_ms": 4095
+  },
+  {
+    "url": "https://fullmovies4u.xyz",
+    "domain": "fullmovies4u.xyz",
+    "risk_score": 36,
+    "category": "PIRACY/WAREZ",
+    "verdict": "LOW_RISK",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "104.21.82.41",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 3,
+      "domain_created": "2026-02-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 55,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "1080p",
+        "720p",
+        "4k",
+        "free download",
+        "movie",
+        "subtitles"
+      ],
+      "phishing_indicators": [
+        "brand mention: Facebook"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Hdhub4u South Movie Bollywood Hollywood Movie Web Series HQ Dub Movie Filmy4web all quality movie",
+      "h1_tags": [
+        "Hdhub4u Website is a Number 1 Website In india 2025 ?"
+      ],
+      "claimed_brands": [],
+      "domain": "fullmovies4u.xyz",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1463,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: fullmovies4u.xyz",
+      ">> Target URL: https://fullmovies4u.xyz",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [NETWORK] IP Resolved: 104.21.82.41",
+      ">> [FETCH] HTTP 200 (93994 bytes)",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [TEMPORAL] Domain Created: 2026-02-05",
+      ">> [TEMPORAL] Domain Age: 3 days",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['1080p', '720p', '4k', 'free download', 'movie']",
+      ">> [PIRACY] Score: 55/100",
+      ">> [PHISHING] Indicators: ['brand mention: Facebook']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: LOW_RISK | Risk Score: 36/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:18:58.096429+00:00",
+    "analysis_duration_ms": 2562
+  },
+  {
+    "url": "https://britishcollege.ae/",
+    "domain": "britishcollege.ae",
+    "risk_score": 15,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [
+      "BULLETPROOF"
+    ],
+    "network_intel": {
+      "ip_address": "88.222.243.27",
+      "geolocation": {
+        "country": "India",
+        "country_code": "IN",
+        "region": "MH",
+        "city": "Mumbai"
+      },
+      "isp": "Hostinger International Limited",
+      "asn": "AS47583 Hostinger International Limited",
+      "org": "UAB INIT",
+      "open_ports": [
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": true,
+      "reverse_dns": "88-222-243-27.init.lt"
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": null,
+      "domain_created": null,
+      "temporal_anomaly": null,
+      "history_fabrication": false
+    },
+    "content_classification": {
+      "category": "LEGITIMATE",
+      "phishing_score": 0,
+      "piracy_score": 0,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [],
+      "phishing_indicators": [],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Coming Soon",
+      "h1_tags": [],
+      "claimed_brands": [],
+      "domain": "britishcollege.ae",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 273,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: britishcollege.ae",
+      ">> Target URL: https://britishcollege.ae/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [NETWORK] IP Resolved: 88.222.243.27",
+      ">> [NETWORK] Location: Mumbai, India",
+      ">> [NETWORK] ISP: Hostinger International Limited",
+      ">> [NETWORK] ASN: AS47583 Hostinger International Limited",
+      ">> [NETWORK] \u26a0\ufe0f BULLETPROOF HOSTING DETECTED",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (87031 bytes)",
+      ">> [PORTSCAN] Open ports: [80, 443]",
+      ">> [NETWORK] Reverse DNS: 88-222-243-27.init.lt",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [CONTENT] Category: LEGITIMATE",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83d\udee1\ufe0f THREAT BADGE: [BULLETPROOF] Abuse-Resistant Hosting",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 15/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['BULLETPROOF']"
+    ],
+    "timestamp": "2026-02-08T18:19:22.724566+00:00",
+    "analysis_duration_ms": 5183
+  },
+  {
+    "url": "https://portal.britishcollege.ae/login",
+    "domain": "portal.britishcollege.ae",
+    "risk_score": 18,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [
+      "BULLETPROOF"
+    ],
+    "network_intel": {
+      "ip_address": "194.238.22.13",
+      "geolocation": {
+        "country": "India",
+        "country_code": "IN",
+        "region": "MH",
+        "city": "Mumbai"
+      },
+      "isp": "Hostinger International Limited",
+      "asn": "AS47583 Hostinger International Limited",
+      "org": "Hostinger International Limited",
+      "open_ports": [
+        22,
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": true,
+      "reverse_dns": "srv544770.hstgr.cloud"
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": null,
+      "domain_created": null,
+      "temporal_anomaly": null,
+      "history_fabrication": false
+    },
+    "content_classification": {
+      "category": "LEGITIMATE",
+      "phishing_score": 10,
+      "piracy_score": 0,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [],
+      "phishing_indicators": [
+        "password fields (1)"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "ASTI Study Portal",
+      "h1_tags": [],
+      "claimed_brands": [],
+      "domain": "portal.britishcollege.ae",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 44,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: portal.britishcollege.ae",
+      ">> Target URL: https://portal.britishcollege.ae/login",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [NETWORK] IP Resolved: 194.238.22.13",
+      ">> [FETCH] HTTP 200 (6602 bytes)",
+      ">> [NETWORK] Location: Mumbai, India",
+      ">> [NETWORK] ISP: Hostinger International Limited",
+      ">> [NETWORK] ASN: AS47583 Hostinger International Limited",
+      ">> [NETWORK] \u26a0\ufe0f BULLETPROOF HOSTING DETECTED",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [PORTSCAN] Open ports: [22, 80, 443]",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [NETWORK] Reverse DNS: srv544770.hstgr.cloud",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PHISHING] Indicators: ['password fields (1)']",
+      ">> [CONTENT] Category: LEGITIMATE",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83d\udee1\ufe0f THREAT BADGE: [BULLETPROOF] Abuse-Resistant Hosting",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 18/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['BULLETPROOF']"
+    ],
+    "timestamp": "2026-02-08T18:20:06.891237+00:00",
+    "analysis_duration_ms": 2835
   }
 ]
