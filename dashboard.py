@@ -1,112 +1,99 @@
 """
 dashboard.py
-NetSentinel + Scam Sentinel - Production Dashboard
+NetSentinel + Scam Sentinel - Cyberpunk NetRunner Dashboard
 
-Features:
-- Real-time IDS alerts via shared JSON file
-- Search functionality for alerts and analysis history
-- URL analysis (Scam Sentinel) integration
-- Terminal-aesthetic cyberpunk interface
+THEME: Neon green/pink on void black with CRT scanlines
+FEATURES:
+- Terminal typing effect for live logs
+- Google Dork intelligence links
+- Forensic-grade URL analysis
+- Real-time threat visualization
 """
 
 import sys
 import os
 import json
-import threading
+import asyncio
 from datetime import datetime
 from pathlib import Path
 
-# Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from flask import Flask, render_template_string, jsonify, request
 from colorama import Fore, Style
 
-# Import URL analyzer
 try:
-    from url_analyzer import analyze_url
+    from url_analyzer import analyze_url_async, get_analyzer
     URL_ANALYZER_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Warning: URL analyzer import failed: {e}")
     URL_ANALYZER_AVAILABLE = False
 
 app = Flask(__name__)
 
-# Configuration
 ALERTS_FILE = "logs/alerts.json"
-ANALYSIS_HISTORY_FILE = "logs/url_analysis_history.json"
-MAX_ALERTS_DISPLAY = 100
-
-# Ensure directories exist
+HISTORY_FILE = "logs/analysis_history.json"
 os.makedirs("logs", exist_ok=True)
 
 
 def read_alerts():
-    """Read alerts from shared JSON file (written by NetSentinel engine)."""
     alerts = []
     try:
         if os.path.exists(ALERTS_FILE):
             with open(ALERTS_FILE, 'r') as f:
                 for line in f:
-                    line = line.strip()
-                    if line:
+                    if line.strip():
                         try:
                             alerts.append(json.loads(line))
-                        except json.JSONDecodeError:
+                        except:
                             pass
-    except Exception:
+    except:
         pass
-    return alerts[-MAX_ALERTS_DISPLAY:]
+    return alerts[-100:]
 
 
-def save_url_analysis(analysis):
-    """Save URL analysis to history."""
+def save_analysis(result):
     try:
         history = []
-        if os.path.exists(ANALYSIS_HISTORY_FILE):
-            with open(ANALYSIS_HISTORY_FILE, 'r') as f:
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r') as f:
                 history = json.load(f)
-        
-        history.append(analysis)
-        history = history[-100:]  # Keep last 100
-        
-        with open(ANALYSIS_HISTORY_FILE, 'w') as f:
+        history.append(result)
+        history = history[-50:]
+        with open(HISTORY_FILE, 'w') as f:
             json.dump(history, f, indent=2, default=str)
-    except Exception:
+    except:
         pass
 
 
-def get_url_history():
-    """Get URL analysis history."""
+def get_history():
     try:
-        if os.path.exists(ANALYSIS_HISTORY_FILE):
-            with open(ANALYSIS_HISTORY_FILE, 'r') as f:
-                return json.load(f)[-50:]
-    except Exception:
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r') as f:
+                return json.load(f)[-30:]
+    except:
         pass
     return []
 
 
-# Production Dashboard HTML
 DASHBOARD_HTML = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetSentinel + Scam Sentinel | Cybersecurity Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>SCAM SENTINEL // NetRunner Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #00ff88;
-            --secondary: #00aaff;
-            --danger: #ff4444;
-            --warning: #ffaa00;
-            --bg-dark: #0a0a0f;
-            --bg-card: rgba(255,255,255,0.03);
-            --text: #e0e0e0;
-            --text-dim: #666;
-            --border: rgba(0,255,136,0.2);
-            --glow: 0 0 20px rgba(0,255,136,0.3);
+            --neon-green: #00ff41;
+            --neon-pink: #ff00ff;
+            --neon-cyan: #00ffff;
+            --neon-red: #ff0040;
+            --neon-yellow: #ffff00;
+            --void-black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --terminal-green: #33ff33;
         }
         
         * {
@@ -117,13 +104,13 @@ DASHBOARD_HTML = '''
         
         body {
             font-family: 'JetBrains Mono', monospace;
-            background: var(--bg-dark);
-            color: var(--text);
+            background: var(--void-black);
+            color: var(--neon-green);
             min-height: 100vh;
             overflow-x: hidden;
         }
         
-        /* Scanline effect */
+        /* CRT Scanlines */
         body::before {
             content: '';
             position: fixed;
@@ -132,21 +119,48 @@ DASHBOARD_HTML = '''
             width: 100%;
             height: 100%;
             pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0,0,0,0.1) 0px,
-                rgba(0,0,0,0.1) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            z-index: 1000;
-            opacity: 0.3;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0,0,0,0.15) 0px,
+                    rgba(0,0,0,0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            z-index: 10000;
         }
         
+        /* CRT Flicker */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: rgba(0,255,65,0.02);
+            animation: flicker 0.15s infinite;
+            z-index: 9999;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 0.97; }
+            50% { opacity: 1; }
+        }
+        
+        /* Glow effects */
+        .glow-green { text-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green), 0 0 30px var(--neon-green); }
+        .glow-pink { text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink); }
+        .glow-cyan { text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan); }
+        .glow-red { text-shadow: 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
+        
         .container {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
         
         /* Header */
@@ -154,842 +168,722 @@ DASHBOARD_HTML = '''
             text-align: center;
             padding: 30px;
             margin-bottom: 30px;
-            background: linear-gradient(135deg, rgba(0,255,136,0.05) 0%, rgba(0,170,255,0.05) 100%);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            border: 1px solid var(--neon-green);
+            background: linear-gradient(180deg, rgba(0,255,65,0.1) 0%, transparent 100%);
             position: relative;
-            overflow: hidden;
         }
         
         header::before {
             content: '';
             position: absolute;
             top: 0;
-            left: -100%;
+            left: 0;
             width: 100%;
             height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            animation: headerScan 3s linear infinite;
+            background: linear-gradient(90deg, transparent, var(--neon-green), var(--neon-pink), var(--neon-cyan), transparent);
+            animation: scanline 2s linear infinite;
         }
         
-        @keyframes headerScan {
-            0% { left: -100%; }
-            100% { left: 100%; }
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
         .logo {
+            font-family: 'Orbitron', sans-serif;
             font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
+            color: var(--neon-green);
+            letter-spacing: 4px;
         }
         
-        .tagline {
-            color: var(--text-dim);
-            font-size: 0.9rem;
+        .logo span {
+            color: var(--neon-pink);
+        }
+        
+        .subtitle {
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+            letter-spacing: 6px;
+            margin-top: 10px;
+            opacity: 0.8;
         }
         
         .status-bar {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 30px;
             margin-top: 20px;
+            font-size: 0.75rem;
         }
         
         .status-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 20px;
-            font-size: 0.8rem;
         }
         
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: blink 1s infinite;
         }
         
-        .status-dot.active { background: var(--primary); }
-        .status-dot.warning { background: var(--warning); }
+        .status-dot.active { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        .status-dot.warning { background: var(--neon-yellow); }
         
-        @keyframes pulse {
+        @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.3; }
         }
         
-        /* Navigation Tabs */
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
+        /* Input Section */
+        .input-section {
             margin-bottom: 30px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
+            padding: 25px;
+            border: 1px solid rgba(0,255,65,0.3);
+            background: rgba(0,0,0,0.5);
         }
         
-        .nav-tab {
-            padding: 12px 24px;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 8px 8px 0 0;
-            color: var(--text-dim);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        
-        .nav-tab:hover {
-            background: var(--bg-card);
-            color: var(--text);
-        }
-        
-        .nav-tab.active {
-            background: var(--bg-card);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-        
-        /* Panels */
-        .panel {
-            display: none;
-        }
-        
-        .panel.active {
+        .input-label {
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
             display: block;
         }
         
-        /* Search Bar */
-        .search-container {
-            margin-bottom: 20px;
-        }
-        
-        .search-box {
+        .input-wrapper {
             display: flex;
-            gap: 10px;
+            gap: 15px;
         }
         
-        .search-input {
+        .target-input {
             flex: 1;
             padding: 15px 20px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--primary);
+            background: var(--void-black);
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
             font-family: inherit;
-            font-size: 1rem;
+            font-size: 1.1rem;
             outline: none;
             transition: all 0.3s;
         }
         
-        .search-input:focus {
-            border-color: var(--primary);
-            box-shadow: var(--glow);
+        .target-input:focus {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 20px rgba(255,0,255,0.3);
         }
         
-        .search-input::placeholder {
-            color: var(--text-dim);
+        .target-input::placeholder {
+            color: rgba(0,255,65,0.4);
         }
         
-        .btn {
-            padding: 15px 30px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            border-radius: 8px;
-            color: #000;
-            font-family: inherit;
-            font-weight: 700;
+        .scan-btn {
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 2px;
             cursor: pointer;
             transition: all 0.3s;
+            text-transform: uppercase;
         }
         
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--glow);
+        .scan-btn:hover {
+            background: var(--neon-pink);
+            color: var(--void-black);
+            box-shadow: 0 0 30px rgba(255,0,255,0.5);
         }
         
-        .btn:disabled {
-            opacity: 0.5;
+        .scan-btn:disabled {
+            opacity: 0.3;
             cursor: not-allowed;
         }
         
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger), #ff6666);
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+        /* Terminal Output */
+        .terminal {
+            background: #000;
+            border: 1px solid var(--neon-green);
             padding: 20px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--glow);
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stat-value.danger { color: var(--danger); }
-        .stat-value.warning { color: var(--warning); }
-        
-        .stat-label {
-            color: var(--text-dim);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-        
-        /* Alerts Section */
-        .section-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .section-title {
-            font-size: 1.2rem;
-            color: var(--secondary);
-        }
-        
-        .alert-list {
-            max-height: 500px;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            max-height: 400px;
             overflow-y: auto;
-        }
-        
-        .alert-item {
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--border);
-            animation: slideIn 0.3s ease-out;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .alert-item:hover {
-            background: rgba(0,0,0,0.5);
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .alert-item.critical { border-color: var(--danger); background: rgba(255,68,68,0.1); }
-        .alert-item.danger { border-color: var(--warning); background: rgba(255,170,0,0.1); }
-        .alert-item.info { border-color: var(--secondary); }
-        
-        .alert-time {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-        }
-        
-        .alert-message {
-            margin-top: 5px;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-        }
-        
-        .no-data {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-dim);
-        }
-        
-        .no-data-icon {
-            font-size: 4rem;
-            margin-bottom: 15px;
-        }
-        
-        /* URL Analyzer */
-        .analyzer-result {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 12px;
             display: none;
         }
         
-        .analyzer-result.visible {
+        .terminal.active {
             display: block;
         }
         
-        .risk-meter {
-            height: 30px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 20px 0;
-            position: relative;
+        .terminal-line {
+            opacity: 0;
+            animation: typeIn 0.05s forwards;
         }
         
-        .risk-fill {
-            height: 100%;
-            border-radius: 15px;
-            transition: width 0.5s ease-out;
-            position: relative;
+        @keyframes typeIn {
+            to { opacity: 1; }
         }
         
-        .risk-fill.safe { background: linear-gradient(90deg, #00ff88, #00cc66); }
-        .risk-fill.low { background: linear-gradient(90deg, #88ff00, #00ff88); }
-        .risk-fill.medium { background: linear-gradient(90deg, #ffaa00, #ff8800); }
-        .risk-fill.high { background: linear-gradient(90deg, #ff6600, #ff4400); }
-        .risk-fill.critical { background: linear-gradient(90deg, #ff4444, #cc0000); }
+        .terminal-line.info { color: var(--neon-green); }
+        .terminal-line.warning { color: var(--neon-yellow); }
+        .terminal-line.error, .terminal-line.critical { color: var(--neon-red); }
+        .terminal-line.success { color: var(--neon-cyan); }
         
-        .risk-score-display {
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--neon-green);
+            animation: cursorBlink 0.7s infinite;
+            vertical-align: text-bottom;
+        }
+        
+        @keyframes cursorBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* Results Section */
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .results.active {
+            display: block;
+        }
+        
+        .verdict-display {
             text-align: center;
-            margin: 20px 0;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 2px solid;
         }
         
-        .risk-score-value {
-            font-size: 4rem;
-            font-weight: 700;
+        .verdict-display.safe {
+            border-color: var(--neon-green);
+            background: rgba(0,255,65,0.05);
         }
         
-        .risk-score-value.safe { color: var(--primary); }
-        .risk-score-value.low { color: #88ff00; }
-        .risk-score-value.medium { color: var(--warning); }
-        .risk-score-value.high { color: #ff6600; }
-        .risk-score-value.critical { color: var(--danger); }
+        .verdict-display.suspicious {
+            border-color: var(--neon-yellow);
+            background: rgba(255,255,0,0.05);
+        }
         
-        .risk-label {
-            font-size: 1.2rem;
-            text-transform: uppercase;
+        .verdict-display.malicious {
+            border-color: var(--neon-red);
+            background: rgba(255,0,64,0.05);
+            animation: dangerPulse 1s infinite;
+        }
+        
+        @keyframes dangerPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255,0,64,0.3); }
+            50% { box-shadow: 0 0 40px rgba(255,0,64,0.6); }
+        }
+        
+        .score-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            margin-bottom: 10px;
+        }
+        
+        .verdict-text {
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+        }
+        
+        /* Threat Grid */
+        .threat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .threat-card {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,65,0.3);
+            padding: 20px;
+        }
+        
+        .threat-card h3 {
+            color: var(--neon-cyan);
+            font-size: 0.9rem;
             letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0,255,65,0.2);
         }
         
-        .signals-list {
-            margin-top: 20px;
-        }
-        
-        .signal-item {
+        .threat-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px;
-            margin-bottom: 8px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 6px;
+            padding: 8px 0;
             font-size: 0.85rem;
         }
         
-        .signal-icon {
-            width: 24px;
-            height: 24px;
+        .threat-icon {
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
         }
         
-        .signal-icon.ok { background: rgba(0,255,136,0.2); color: var(--primary); }
-        .signal-icon.warning { background: rgba(255,170,0,0.2); color: var(--warning); }
-        .signal-icon.critical { background: rgba(255,68,68,0.2); color: var(--danger); }
-        .signal-icon.info { background: rgba(0,170,255,0.2); color: var(--secondary); }
+        .threat-icon.danger { background: rgba(255,0,64,0.3); color: var(--neon-red); }
+        .threat-icon.warning { background: rgba(255,255,0,0.3); color: var(--neon-yellow); }
+        .threat-icon.ok { background: rgba(0,255,65,0.3); color: var(--neon-green); }
         
-        /* Terminal Output Effect */
-        .terminal-output {
-            font-family: inherit;
-            background: #000;
+        /* Intel Links */
+        .intel-section {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-cyan);
             padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-size: 0.85rem;
-            line-height: 1.6;
+            margin-bottom: 30px;
         }
         
-        .terminal-line {
-            margin-bottom: 5px;
+        .intel-section h3 {
+            color: var(--neon-cyan);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
         }
         
-        .terminal-line.system { color: var(--text-dim); }
-        .terminal-line.ok { color: var(--primary); }
-        .terminal-line.warning { color: var(--warning); }
-        .terminal-line.error { color: var(--danger); }
-        .terminal-line.info { color: var(--secondary); }
-        
-        /* Typewriter effect */
-        .typewriter {
-            overflow: hidden;
-            border-right: 2px solid var(--primary);
-            animation: blink 0.7s step-end infinite;
+        .intel-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
         }
         
-        @keyframes blink {
-            50% { border-color: transparent; }
+        .intel-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(0,255,255,0.1);
+            border: 1px solid rgba(0,255,255,0.3);
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.3s;
         }
         
-        /* Loading spinner */
+        .intel-link:hover {
+            background: var(--neon-cyan);
+            color: var(--void-black);
+        }
+        
+        /* Risk Summary */
+        .risk-summary {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-pink);
+            padding: 25px;
+            margin-bottom: 30px;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+        
+        /* History */
+        .history-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(0,255,65,0.2);
+        }
+        
+        .history-section h2 {
+            color: var(--neon-cyan);
+            font-size: 1rem;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid rgba(0,255,65,0.2);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .history-item:hover {
+            border-color: var(--neon-green);
+            background: rgba(0,255,65,0.05);
+        }
+        
+        .history-item.safe { border-left: 3px solid var(--neon-green); }
+        .history-item.suspicious { border-left: 3px solid var(--neon-yellow); }
+        .history-item.malicious { border-left: 3px solid var(--neon-red); }
+        
+        .history-domain {
+            font-size: 0.9rem;
+        }
+        
+        .history-score {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        /* Loading */
         .loading {
             display: none;
-            align-items: center;
-            justify-content: center;
+            text-align: center;
             padding: 40px;
         }
         
-        .loading.visible {
-            display: flex;
+        .loading.active {
+            display: block;
         }
         
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .loading-text {
+            color: var(--neon-pink);
+            animation: loadingPulse 1s infinite;
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes loadingPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
         
-        /* Footer */
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--void-black);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-green);
+        }
+        
         footer {
             text-align: center;
             padding: 30px;
-            color: var(--text-dim);
-            font-size: 0.8rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .search-box {
-                flex-direction: column;
-            }
-            
-            .nav-tabs {
-                flex-wrap: wrap;
-            }
+            color: rgba(0,255,65,0.4);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">🛡️ NetSentinel + Scam Sentinel</div>
-            <p class="tagline">Cybersecurity Command Center | Real-Time Threat Detection & URL Analysis</p>
+            <div class="logo glow-green">SCAM <span class="glow-pink">SENTINEL</span></div>
+            <div class="subtitle">// NETRUNNER THREAT INTELLIGENCE INTERFACE //</div>
             <div class="status-bar">
                 <div class="status-item">
                     <span class="status-dot active"></span>
-                    <span>IDS Engine: <span id="ids-status">Ready</span></span>
+                    <span>ANALYZER: ONLINE</span>
                 </div>
                 <div class="status-item">
                     <span class="status-dot active"></span>
-                    <span>URL Analyzer: <span id="analyzer-status">{{ 'Active' if url_analyzer_available else 'Limited' }}</span></span>
+                    <span>FORENSICS: READY</span>
                 </div>
                 <div class="status-item">
-                    <span class="status-dot active"></span>
-                    <span id="current-time">--:--:--</span>
+                    <span id="clock">--:--:--</span>
                 </div>
             </div>
         </header>
         
-        <nav class="nav-tabs">
-            <button class="nav-tab active" data-panel="dashboard">📊 Dashboard</button>
-            <button class="nav-tab" data-panel="url-analyzer">🔍 URL Analyzer</button>
-            <button class="nav-tab" data-panel="alerts">🚨 Alerts</button>
-            <button class="nav-tab" data-panel="history">📜 History</button>
-        </nav>
+        <div class="input-section">
+            <label class="input-label">&gt; ENTER TARGET URL FOR ANALYSIS</label>
+            <div class="input-wrapper">
+                <input type="text" id="target-input" class="target-input" 
+                       placeholder="https://suspicious-site.com" 
+                       onkeypress="if(event.key==='Enter')initiateScan()">
+                <button class="scan-btn" id="scan-btn" onclick="initiateScan()">SCAN</button>
+            </div>
+        </div>
         
-        <!-- Dashboard Panel -->
-        <div id="panel-dashboard" class="panel active">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-packets">0</div>
-                    <div class="stat-label">Packets Captured</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value danger" id="stat-alerts">0</div>
-                    <div class="stat-label">Total Alerts</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-urls">0</div>
-                    <div class="stat-label">URLs Analyzed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value warning" id="stat-threats">0</div>
-                    <div class="stat-label">Threats Found</div>
-                </div>
+        <div class="terminal" id="terminal">
+            <div id="terminal-output"></div>
+            <span class="cursor"></span>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-text">[ANALYZING TARGET...]</div>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="verdict-display" id="verdict-display">
+                <div class="score-display" id="score-display">--</div>
+                <div class="verdict-text" id="verdict-text">ANALYZING...</div>
             </div>
             
-            <div class="section-card">
-                <div class="section-header">
-                    <h2 class="section-title">🚨 Recent Alerts</h2>
-                    <button class="btn" onclick="refreshAlerts()">↻ Refresh</button>
-                </div>
-                <div class="alert-list" id="recent-alerts">
-                    <div class="no-data">
-                        <div class="no-data-icon">✅</div>
-                        <p>No threats detected. System is secure.</p>
-                    </div>
-                </div>
+            <div class="risk-summary" id="risk-summary"></div>
+            
+            <div class="intel-section" id="intel-section">
+                <h3>&gt; INTELLIGENCE LINKS (GOOGLE DORKS)</h3>
+                <div class="intel-links" id="intel-links"></div>
             </div>
+            
+            <div class="threat-grid" id="threat-grid"></div>
         </div>
         
-        <!-- URL Analyzer Panel -->
-        <div id="panel-url-analyzer" class="panel">
-            <div class="section-card">
-                <div class="section-header">
-                    <h2 class="section-title">🔍 Scam Sentinel URL Analyzer</h2>
-                </div>
-                <p style="color: var(--text-dim); margin-bottom: 20px;">
-                    Enter any URL to analyze for scam indicators, phishing attempts, and security risks.
-                </p>
-                
-                <div class="search-box">
-                    <input type="text" id="url-input" class="search-input" 
-                           placeholder="https://example.com or just example.com" 
-                           onkeypress="if(event.key==='Enter')analyzeUrl()">
-                    <button class="btn" id="analyze-btn" onclick="analyzeUrl()">⚡ ANALYZE</button>
-                </div>
-                
-                <div class="loading" id="analyzer-loading">
-                    <div class="spinner"></div>
-                    <span style="margin-left: 15px;">Scanning target...</span>
-                </div>
-                
-                <div class="analyzer-result" id="analyzer-result">
-                    <div class="risk-score-display">
-                        <div class="risk-score-value" id="risk-score">--</div>
-                        <div class="risk-label" id="risk-label">ANALYZING...</div>
-                    </div>
-                    
-                    <div class="risk-meter">
-                        <div class="risk-fill" id="risk-fill" style="width: 0%"></div>
-                    </div>
-                    
-                    <div class="terminal-output" id="terminal-output"></div>
-                    
-                    <h3 style="margin-top: 30px; color: var(--secondary);">📋 Analysis Signals</h3>
-                    <div class="signals-list" id="signals-list"></div>
-                    
-                    <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
-                        <h4 style="color: var(--warning); margin-bottom: 10px;">💡 Recommendations</h4>
-                        <ul id="recommendations" style="margin-left: 20px; color: var(--text-dim);"></ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Alerts Panel -->
-        <div id="panel-alerts" class="panel">
-            <div class="section-card">
-                <div class="section-header">
-                    <h2 class="section-title">🚨 All Security Alerts</h2>
-                    <div class="search-box" style="flex: 0.5; margin-bottom: 0;">
-                        <input type="text" id="alerts-search" class="search-input" 
-                               placeholder="Search alerts..." oninput="filterAlerts()">
-                    </div>
-                </div>
-                <div class="alert-list" id="all-alerts" style="max-height: 600px;"></div>
-            </div>
-        </div>
-        
-        <!-- History Panel -->
-        <div id="panel-history" class="panel">
-            <div class="section-card">
-                <div class="section-header">
-                    <h2 class="section-title">📜 URL Analysis History</h2>
-                    <div class="search-box" style="flex: 0.5; margin-bottom: 0;">
-                        <input type="text" id="history-search" class="search-input" 
-                               placeholder="Search history..." oninput="filterHistory()">
-                    </div>
-                </div>
-                <div class="alert-list" id="history-list" style="max-height: 600px;"></div>
-            </div>
+        <div class="history-section">
+            <h2>&gt; SCAN HISTORY</h2>
+            <div id="history-list"></div>
         </div>
         
         <footer>
-            <p>NetSentinel IDS + Scam Sentinel v2.0 | Security Hardened | Production Ready</p>
-            <p style="margin-top: 5px;">LRU Eviction • Fast Path Analysis • Real-Time Monitoring</p>
+            SCAM SENTINEL v3.0 // FORENSIC URL ANALYSIS ENGINE // STAY VIGILANT
         </footer>
     </div>
     
     <script>
-        // State
-        let allAlerts = [];
-        let urlHistory = [];
-        
-        // Tab Navigation
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
-            });
-        });
-        
-        // Update time
-        function updateTime() {
+        // Clock
+        function updateClock() {
             const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {hour12: false});
         }
-        setInterval(updateTime, 1000);
-        updateTime();
+        setInterval(updateClock, 1000);
+        updateClock();
         
-        // Refresh alerts
-        async function refreshAlerts() {
-            try {
-                const response = await fetch('/api/alerts');
-                const data = await response.json();
-                allAlerts = data.alerts || [];
-                
-                document.getElementById('stat-alerts').textContent = allAlerts.length;
-                document.getElementById('stat-packets').textContent = data.stats?.packets_captured || 0;
-                
-                renderAlerts('recent-alerts', allAlerts.slice(-10), true);
-                renderAlerts('all-alerts', allAlerts, false);
-            } catch (e) {
-                console.error('Error refreshing alerts:', e);
-            }
-        }
-        
-        // Render alerts
-        function renderAlerts(containerId, alerts, showEmpty) {
-            const container = document.getElementById(containerId);
+        // Terminal typing effect
+        async function typeLine(container, text, level, delay = 30) {
+            const line = document.createElement('div');
+            line.className = 'terminal-line ' + level;
+            container.appendChild(line);
             
-            if (alerts.length === 0 && showEmpty) {
-                container.innerHTML = `
-                    <div class="no-data">
-                        <div class="no-data-icon">✅</div>
-                        <p>No threats detected. System is secure.</p>
-                    </div>
-                `;
-                return;
+            for (let i = 0; i < text.length; i++) {
+                line.textContent += text[i];
+                container.scrollTop = container.scrollHeight;
+                await new Promise(r => setTimeout(r, delay));
             }
-            
-            if (alerts.length === 0) {
-                container.innerHTML = '<div class="no-data"><p>No alerts found</p></div>';
-                return;
-            }
-            
-            container.innerHTML = alerts.slice().reverse().map(alert => {
-                const severity = alert.message?.includes('CRITICAL') ? 'critical' : 
-                               (alert.message?.includes('DANGER') ? 'danger' : 'info');
-                return `
-                    <div class="alert-item ${severity}">
-                        <div class="alert-time">${alert.time || alert.timestamp || 'Unknown time'}</div>
-                        <div class="alert-message">${alert.message || JSON.stringify(alert)}</div>
-                    </div>
-                `;
-            }).join('');
+            return line;
         }
         
-        // Filter alerts
-        function filterAlerts() {
-            const query = document.getElementById('alerts-search').value.toLowerCase();
-            const filtered = allAlerts.filter(a => 
-                (a.message || '').toLowerCase().includes(query) ||
-                (a.time || '').toLowerCase().includes(query)
-            );
-            renderAlerts('all-alerts', filtered, false);
+        async function typeLog(log) {
+            const container = document.getElementById('terminal-output');
+            const time = log.timestamp || '--:--:--';
+            const module = log.module || 'SYS';
+            const msg = log.message || '';
+            const level = log.level || 'info';
+            
+            const prefix = `[${time}] [${module}] `;
+            await typeLine(container, prefix + msg, level, 15);
         }
         
-        // URL Analyzer
-        async function analyzeUrl() {
-            const urlInput = document.getElementById('url-input');
-            const url = urlInput.value.trim();
+        // Main scan function
+        async function initiateScan() {
+            const input = document.getElementById('target-input');
+            const url = input.value.trim();
             
             if (!url) {
-                alert('Please enter a URL to analyze');
+                alert('Enter a target URL');
                 return;
             }
             
-            // Show loading
-            document.getElementById('analyzer-loading').classList.add('visible');
-            document.getElementById('analyzer-result').classList.remove('visible');
-            document.getElementById('analyze-btn').disabled = true;
+            // Reset UI
+            document.getElementById('terminal').classList.add('active');
+            document.getElementById('terminal-output').innerHTML = '';
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('scan-btn').disabled = true;
+            
+            // Initial messages
+            const output = document.getElementById('terminal-output');
+            await typeLine(output, '[SYSTEM] Initializing forensic analysis engine...', 'info', 20);
+            await typeLine(output, '[SYSTEM] Target acquired: ' + url, 'success', 20);
+            await new Promise(r => setTimeout(r, 300));
             
             try {
-                const response = await fetch('/api/analyze-url', {
+                const response = await fetch('/api/analyze', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url})
                 });
                 
                 const result = await response.json();
-                displayAnalysisResult(result);
-                refreshHistory();
+                
+                if (result.error) {
+                    await typeLine(output, '[ERROR] ' + result.error, 'error', 20);
+                    return;
+                }
+                
+                // Type out logs with effect
+                for (const log of result.logs || []) {
+                    await typeLog(log);
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                
+                await new Promise(r => setTimeout(r, 500));
+                await typeLine(output, '[COMPLETE] Analysis finished in ' + result.analysis_duration_ms + 'ms', 'success', 20);
+                
+                // Show results
+                displayResults(result);
+                loadHistory();
                 
             } catch (e) {
-                console.error('Analysis error:', e);
-                alert('Analysis failed: ' + e.message);
+                await typeLine(output, '[FATAL] Connection failed: ' + e.message, 'error', 20);
             } finally {
-                document.getElementById('analyzer-loading').classList.remove('visible');
-                document.getElementById('analyze-btn').disabled = false;
+                document.getElementById('scan-btn').disabled = false;
             }
         }
         
-        // Display analysis result
-        function displayAnalysisResult(result) {
-            const resultDiv = document.getElementById('analyzer-result');
-            resultDiv.classList.add('visible');
+        function displayResults(result) {
+            document.getElementById('results').classList.add('active');
             
-            // Risk score
-            const score = result.risk_score || 0;
-            const level = result.risk_level || 'UNKNOWN';
-            const levelClass = level.toLowerCase();
+            // Verdict
+            const verdictDiv = document.getElementById('verdict-display');
+            verdictDiv.className = 'verdict-display ' + result.verdict.toLowerCase();
             
-            document.getElementById('risk-score').textContent = score;
-            document.getElementById('risk-score').className = 'risk-score-value ' + levelClass;
-            document.getElementById('risk-label').textContent = level + ' RISK';
+            document.getElementById('score-display').textContent = result.score;
+            document.getElementById('score-display').className = 'score-display glow-' + 
+                (result.verdict === 'SAFE' ? 'green' : (result.verdict === 'SUSPICIOUS' ? 'pink' : 'red'));
             
-            // Risk meter
-            const fill = document.getElementById('risk-fill');
-            fill.style.width = score + '%';
-            fill.className = 'risk-fill ' + levelClass;
+            document.getElementById('verdict-text').textContent = result.verdict;
             
-            // Terminal output
-            const terminal = document.getElementById('terminal-output');
-            terminal.innerHTML = '';
+            // Risk summary
+            document.getElementById('risk-summary').textContent = result.risk_summary;
             
-            addTerminalLine(terminal, `[SYSTEM] Initiating scan of: ${result.url || result.domain}`, 'system');
-            addTerminalLine(terminal, `[OK] Target resolved to: ${result.domain}`, 'ok');
+            // Intel links
+            const intelContainer = document.getElementById('intel-links');
+            intelContainer.innerHTML = '';
+            const dorks = result.google_dorks || {};
+            const dorkLabels = {
+                site_search: '🔍 Site Index',
+                reputation: '⚠️ Reputation Check',
+                whois_lookup: '📋 WHOIS Data',
+                virustotal: '🦠 VirusTotal',
+                urlscan: '🔬 URLScan.io',
+                wayback: '📜 Wayback Machine',
+                shodan: '🌐 Shodan',
+                abuse_report: '🚨 Report Phishing'
+            };
             
-            if (result.domain_info?.age_days !== undefined) {
-                const days = result.domain_info.age_days;
-                addTerminalLine(terminal, `[INFO] Domain age: ${days} days`, days < 30 ? 'error' : 'info');
+            for (const [key, url] of Object.entries(dorks)) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.className = 'intel-link';
+                link.textContent = dorkLabels[key] || key;
+                intelContainer.appendChild(link);
             }
             
-            if (result.ssl_info?.issuer) {
-                addTerminalLine(terminal, `[OK] SSL Certificate: ${result.ssl_info.issuer}`, 'ok');
+            // Threat indicators
+            const grid = document.getElementById('threat-grid');
+            grid.innerHTML = '';
+            
+            // SSL Card
+            if (result.ssl_forensics) {
+                const card = createThreatCard('SSL FORENSICS', [
+                    {icon: result.ssl_forensics.issuer_trust === 'COMMERCIAL_EV' ? 'ok' : 'warning', 
+                     text: 'Issuer: ' + (result.ssl_forensics.certificate?.issuer || 'Unknown')},
+                    {icon: result.ssl_forensics.certificate?.expiry_days > 30 ? 'ok' : 'warning',
+                     text: 'Expires in: ' + (result.ssl_forensics.certificate?.expiry_days || '?') + ' days'},
+                    {icon: result.ssl_forensics.issuer_trust === 'SELF-SIGNED' ? 'danger' : 'ok',
+                     text: 'Trust Level: ' + (result.ssl_forensics.issuer_trust || 'Unknown')}
+                ]);
+                grid.appendChild(card);
             }
             
-            if (result.content_info?.urgency_keywords_found !== undefined) {
-                const count = result.content_info.urgency_keywords_found;
-                addTerminalLine(terminal, `[${count > 3 ? 'WARNING' : 'INFO'}] Urgency keywords found: ${count}`, count > 3 ? 'warning' : 'info');
+            // Domain Intel Card
+            if (result.domain_intel) {
+                const card = createThreatCard('DOMAIN INTELLIGENCE', [
+                    {icon: (result.domain_intel.age_days || 0) > 365 ? 'ok' : 'warning',
+                     text: 'Age: ' + (result.domain_intel.age_days || '?') + ' days'},
+                    {icon: 'ok', text: 'Registrar: ' + (result.domain_intel.registrar || 'Unknown')},
+                    {icon: result.domain_intel.privacy_protected ? 'warning' : 'ok',
+                     text: result.domain_intel.privacy_protected ? 'Privacy Protected' : 'Public WHOIS'}
+                ]);
+                grid.appendChild(card);
             }
             
-            addTerminalLine(terminal, `[COMPLETE] Risk assessment: ${level} (${score}/100)`, score > 60 ? 'error' : 'ok');
+            // Content Analysis Card
+            if (result.content_analysis) {
+                const card = createThreatCard('CONTENT ANALYSIS', [
+                    {icon: result.content_analysis.urgency_score > 30 ? 'danger' : 'ok',
+                     text: 'Urgency Score: ' + (result.content_analysis.urgency_score || 0)},
+                    {icon: result.content_analysis.financial_score > 30 ? 'danger' : 'ok',
+                     text: 'Financial Keywords: ' + (result.content_analysis.financial_score || 0)},
+                    {icon: result.content_analysis.forms?.suspicious ? 'danger' : 'ok',
+                     text: 'Forms: ' + (result.content_analysis.forms?.count || 0) + ' detected'}
+                ]);
+                grid.appendChild(card);
+            }
             
-            // Signals
-            const signalsList = document.getElementById('signals-list');
-            signalsList.innerHTML = (result.signals || []).map(signal => {
-                const status = signal.status?.toLowerCase() || 'info';
-                const icon = status === 'ok' ? '✓' : (status === 'critical' || status === 'error' ? '✗' : (status === 'warning' ? '!' : 'i'));
-                return `
-                    <div class="signal-item">
-                        <span class="signal-icon ${status}">${icon}</span>
-                        <span><strong>${signal.type}:</strong> ${signal.message}</span>
-                    </div>
-                `;
-            }).join('');
+            // Tech Stack Card
+            if (result.tech_stack) {
+                const card = createThreatCard('TECHNOLOGY STACK', [
+                    {icon: result.tech_stack.detected?.includes('Phishing') ? 'danger' : 'ok',
+                     text: 'Platform: ' + (result.tech_stack.detected || 'Unknown')},
+                    {icon: 'ok', text: 'Confidence: ' + (result.tech_stack.confidence || 0) + '%'}
+                ]);
+                grid.appendChild(card);
+            }
             
-            // Recommendations
-            const recList = document.getElementById('recommendations');
-            recList.innerHTML = (result.recommendations || ['Analysis complete']).map(r => 
-                `<li>${r}</li>`
-            ).join('');
+            // Threat Indicators Card
+            if (result.threat_indicators && result.threat_indicators.length > 0) {
+                const items = result.threat_indicators.slice(0, 5).map(t => ({icon: 'danger', text: t}));
+                const card = createThreatCard('⚠️ THREAT INDICATORS', items);
+                grid.appendChild(card);
+            }
             
-            // Update stats
-            document.getElementById('stat-urls').textContent = 
-                parseInt(document.getElementById('stat-urls').textContent) + 1;
-            if (score >= 60) {
-                document.getElementById('stat-threats').textContent = 
-                    parseInt(document.getElementById('stat-threats').textContent) + 1;
+            // Recommendations Card
+            if (result.recommendations && result.recommendations.length > 0) {
+                const items = result.recommendations.slice(0, 5).map(r => ({icon: r.startsWith('🚫') ? 'danger' : 'ok', text: r}));
+                const card = createThreatCard('📋 RECOMMENDATIONS', items);
+                grid.appendChild(card);
             }
         }
         
-        function addTerminalLine(terminal, text, type) {
-            const line = document.createElement('div');
-            line.className = 'terminal-line ' + type;
-            line.textContent = text;
-            terminal.appendChild(line);
+        function createThreatCard(title, items) {
+            const card = document.createElement('div');
+            card.className = 'threat-card';
+            card.innerHTML = '<h3>' + title + '</h3>';
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'threat-item';
+                div.innerHTML = '<span class="threat-icon ' + item.icon + '">' + 
+                    (item.icon === 'danger' ? '!' : (item.icon === 'warning' ? '?' : '✓')) + 
+                    '</span><span>' + item.text + '</span>';
+                card.appendChild(div);
+            });
+            
+            return card;
         }
         
         // History
-        async function refreshHistory() {
+        async function loadHistory() {
             try {
-                const response = await fetch('/api/url-history');
-                urlHistory = await response.json();
-                renderHistory(urlHistory);
+                const response = await fetch('/api/history');
+                const history = await response.json();
+                
+                const container = document.getElementById('history-list');
+                container.innerHTML = '';
+                
+                history.slice().reverse().forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item ' + (item.verdict || 'unknown').toLowerCase();
+                    div.innerHTML = `
+                        <span class="history-domain">${item.domain || item.target}</span>
+                        <span class="history-score">${item.score}/100</span>
+                    `;
+                    div.onclick = () => {
+                        document.getElementById('target-input').value = item.target;
+                        initiateScan();
+                    };
+                    container.appendChild(div);
+                });
             } catch (e) {
-                console.error('Error loading history:', e);
+                console.error('History load failed:', e);
             }
-        }
-        
-        function renderHistory(history) {
-            const container = document.getElementById('history-list');
-            
-            if (!history || history.length === 0) {
-                container.innerHTML = '<div class="no-data"><p>No URL analysis history</p></div>';
-                return;
-            }
-            
-            container.innerHTML = history.slice().reverse().map(item => {
-                const level = (item.risk_level || 'unknown').toLowerCase();
-                const severity = ['critical', 'high'].includes(level) ? 'critical' : 
-                               (level === 'medium' ? 'danger' : 'info');
-                return `
-                    <div class="alert-item ${severity}" onclick="document.getElementById('url-input').value='${item.url}'; document.querySelector('[data-panel=url-analyzer]').click();">
-                        <div class="alert-time">${item.timestamp || 'Unknown'}</div>
-                        <div class="alert-message">
-                            <strong>${item.url || item.domain}</strong><br>
-                            Risk: ${item.risk_level} (${item.risk_score}/100)
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        function filterHistory() {
-            const query = document.getElementById('history-search').value.toLowerCase();
-            const filtered = urlHistory.filter(h => 
-                (h.url || '').toLowerCase().includes(query) ||
-                (h.domain || '').toLowerCase().includes(query)
-            );
-            renderHistory(filtered);
         }
         
         // Initial load
-        refreshAlerts();
-        refreshHistory();
-        
-        // Auto-refresh every 5 seconds
-        setInterval(refreshAlerts, 5000);
+        loadHistory();
     </script>
 </body>
 </html>
@@ -997,26 +891,12 @@ DASHBOARD_HTML = '''
 
 
 @app.route('/')
-def dashboard():
-    return render_template_string(DASHBOARD_HTML, url_analyzer_available=URL_ANALYZER_AVAILABLE)
+def index():
+    return render_template_string(DASHBOARD_HTML)
 
 
-@app.route('/api/alerts')
-def api_alerts():
-    """Get IDS alerts from shared JSON file."""
-    alerts = read_alerts()
-    return jsonify({
-        "alerts": alerts,
-        "stats": {
-            "packets_captured": len(alerts) * 100,  # Estimate
-            "alerts_total": len(alerts)
-        }
-    })
-
-
-@app.route('/api/analyze-url', methods=['POST'])
-def api_analyze_url():
-    """Analyze a URL for scam/security risks."""
+@app.route('/api/analyze', methods=['POST'])
+def analyze():
     data = request.get_json()
     url = data.get('url', '')
     
@@ -1024,43 +904,43 @@ def api_analyze_url():
         return jsonify({"error": "No URL provided"}), 400
     
     if URL_ANALYZER_AVAILABLE:
-        result = analyze_url(url)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(analyze_url_async(url))
+        finally:
+            loop.close()
     else:
-        # Fallback basic analysis
         result = {
-            "url": url,
-            "timestamp": datetime.now().isoformat(),
-            "risk_score": 50,
-            "risk_level": "UNKNOWN",
-            "signals": [
-                {"type": "system", "status": "WARNING", "message": "Full analyzer not available"}
-            ],
-            "recommendations": ["Install python-whois and beautifulsoup4 for full analysis"]
+            "target": url,
+            "score": 50,
+            "verdict": "UNKNOWN",
+            "risk_summary": "Analyzer not available",
+            "logs": [{"module": "ERROR", "message": "URL analyzer module not loaded", "level": "error"}],
+            "threat_indicators": [],
+            "recommendations": []
         }
     
-    # Save to history
-    save_url_analysis(result)
-    
+    save_analysis(result)
     return jsonify(result)
 
 
-@app.route('/api/url-history')
-def api_url_history():
-    """Get URL analysis history."""
-    return jsonify(get_url_history())
+@app.route('/api/history')
+def history():
+    return jsonify(get_history())
 
 
-def run_dashboard(host='0.0.0.0', port=8080):
-    """Run the production dashboard."""
+@app.route('/api/alerts')
+def alerts():
+    return jsonify({"alerts": read_alerts()})
+
+
+if __name__ == '__main__':
     print(f"\n{Fore.GREEN}{'='*60}")
-    print(f"NetSentinel + Scam Sentinel - Production Dashboard")
+    print(f"{Fore.MAGENTA}SCAM SENTINEL{Fore.GREEN} // NetRunner Interface v3.0")
     print(f"{'='*60}{Style.RESET_ALL}")
-    print(f"Dashboard URL: http://localhost:{port}")
-    print(f"URL Analyzer: {'Available' if URL_ANALYZER_AVAILABLE else 'Limited'}")
-    print(f"\nPress Ctrl+C to stop\n")
+    print(f"Dashboard: http://localhost:8080")
+    print(f"Analyzer: {'ONLINE' if URL_ANALYZER_AVAILABLE else 'OFFLINE'}")
+    print(f"\nPress Ctrl+C to terminate\n")
     
-    app.run(host=host, port=port, debug=False, threaded=True)
-
-
-if __name__ == "__main__":
-    run_dashboard()
+    app.run(host='0.0.0.0', port=8080, debug=False, threaded=True)

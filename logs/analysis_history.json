@@ -1,0 +1,127 @@
+[
+  {
+    "target": "https://www.paypal-account-verify.xyz",
+    "domain": "www.paypal-account-verify.xyz",
+    "score": 61,
+    "verdict": "SUSPICIOUS",
+    "risk_summary": "This URL has a risk score of 61/100 and is classified as SUSPICIOUS.\n\n\n\u26a0 KEY THREATS IDENTIFIED:\n\n  1. No SSL/TLS encryption\n  2. Unable to fetch content: Cannot connect to host www.paypal-account-verify.xyz:443 ssl:False [nodename nor servname provided, or not known]\n  3. High-risk TLD: .xyz\n\n\n\u26a0 RECOMMENDATION: Exercise extreme caution. Verify the legitimacy of this site through official channels before interacting.",
+    "logs": [
+      {
+        "timestamp": "23:25:59.455",
+        "module": "INIT",
+        "message": "Target acquired: www.paypal-account-verify.xyz",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:25:59.455",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:25:59.456",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:25:59.457",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:25:59.457",
+        "module": "DOMAIN",
+        "message": "\u26a0 Suspicious TLD: .xyz",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:25:59.624",
+        "module": "SSL",
+        "message": "No HTTPS available - HIGH RISK",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:25:59.624",
+        "module": "CONTENT",
+        "message": "Connection failed: Cannot connect to host www.paypal-account-verify.xyz:443 ssl:False [nodename nor servname provided, or not known]",
+        "level": "error"
+      },
+      {
+        "timestamp": "23:26:01.087",
+        "module": "DOMAIN",
+        "message": "Could not determine domain age",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:26:01.087",
+        "module": "VERDICT",
+        "message": "Risk Score: 61/100 - SUSPICIOUS",
+        "level": "warning"
+      }
+    ],
+    "tech_stack": {
+      "detected": "Unknown",
+      "confidence": 0
+    },
+    "ssl_forensics": {
+      "score": 80,
+      "threats": [
+        "No SSL/TLS encryption"
+      ],
+      "certificate": {},
+      "issuer_trust": "NONE"
+    },
+    "content_analysis": {
+      "score": 40,
+      "threats": [
+        "Unable to fetch content: Cannot connect to host www.paypal-account-verify.xyz:443 ssl:False [nodename nor servname provided, or not known]"
+      ],
+      "tech_stack": {
+        "detected": "Unknown",
+        "confidence": 0
+      },
+      "forms": {
+        "count": 0,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 45,
+      "threats": [
+        "High-risk TLD: .xyz"
+      ],
+      "age_days": null,
+      "registrar": null,
+      "creation_date": null,
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "No SSL/TLS encryption",
+      "Unable to fetch content: Cannot connect to host www.paypal-account-verify.xyz:443 ssl:False [nodename nor servname provided, or not known]",
+      "High-risk TLD: .xyz"
+    ],
+    "recommendations": [
+      "\u26a0 Verify site legitimacy through official channels",
+      "\u26a0 Do not enter sensitive information without verification",
+      "\u26a0 Check URL carefully for typosquatting",
+      "\u2713 Use a password manager to avoid phishing"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:paypal-account-verify.xyz",
+      "reputation": "https://www.google.com/search?q=\"paypal-account-verify.xyz\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/paypal-account-verify.xyz",
+      "virustotal": "https://www.virustotal.com/gui/domain/paypal-account-verify.xyz",
+      "urlscan": "https://urlscan.io/search/#domain:paypal-account-verify.xyz",
+      "wayback": "https://web.archive.org/web/*/paypal-account-verify.xyz",
+      "shodan": "https://www.shodan.io/search?query=hostname:paypal-account-verify.xyz",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://paypal-account-verify.xyz"
+    },
+    "timestamp": "2026-02-08T17:41:01.087650+00:00",
+    "analysis_duration_ms": 1632
+  }
+]
