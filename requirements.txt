@@ -12,3 +12,8 @@ flask-login>=0.6.3
 flask-socketio==5.3.6
 flask-bcrypt==1.0.1
 simple-websocket==1.0.0
+
+# Cortex v2.0 - FastAPI Data Sharing
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
