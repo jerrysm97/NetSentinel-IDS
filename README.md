@@ -1,65 +1,55 @@
 # NetSentinel IDS
 
-A modular, object-oriented Intrusion Detection System built on Python that demonstrates advanced software engineering principles with practical cybersecurity implementation.
+A modular, security-hardened Intrusion Detection System using polymorphic design patterns.
 
-## Features
+## Security Features (v2.0)
 
-- **Polymorphic Design**: Pluggable threat detection using Strategy Pattern
-- **Multi-threaded Architecture**: Producer-consumer pattern prevents packet loss
-- **Three Detection Mechanisms**:
-  - SYN Flood (DoS) Detection
-  - Plaintext Credential Leakage
-  - ARP Spoofing (MITM) Detection
+- **LRU Eviction**: Prevents memory exhaustion attacks (max 10k entries)
+- **TTL Expiration**: Handles DHCP reassignment false positives
+- **Fast Path Analysis**: Byte search before regex (CPU optimization)
+- **Allowlist Filtering**: Ignore trusted IPs early
+- **Poison Pill Shutdown**: Clean thread termination
+- **Static Bindings**: Trusted IP-MAC pairs for critical infrastructure
 
-## Requirements
+## Monitors
 
-- Linux environment (Ubuntu 20.04+ recommended)
-- Python 3.8+
-- Root/sudo privileges for packet capture
-- VM in Bridged network mode for real traffic
+| Monitor | Detection | Security Fix |
+|---------|-----------|--------------|
+| SYN Flood | DoS attacks | Bounded counter with LRU |
+| Plaintext | Credential leaks | Fast byte search before regex |
+| ARP Spoof | MITM attacks | LRU cache + TTL + trusted bindings |
 
 ## Installation
 
 ```bash
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
 ## Usage
 
+### Console Mode (requires Linux + root)
 ```bash
-# Start the IDS (requires root)
 sudo venv/bin/python3 src/main.py
 ```
 
-**Note**: Edit `src/main.py` to set your network interface (default: `eth0`).
-
-## Testing
-
-Run these in separate terminals:
-
+### Web Dashboard (Demo Mode)
 ```bash
-# Terminal 1: Start NetSentinel
-sudo venv/bin/python3 src/main.py
-
-# Terminal 2: Run tests
-sudo venv/bin/python3 tests/test_syn_flood.py    # DoS simulation
-sudo venv/bin/python3 tests/test_plaintext.py   # Credential test
-sudo venv/bin/python3 tests/test_arp_spoof.py   # ARP poisoning test
-sudo venv/bin/python3 tests/benchmark.py        # Performance test
+venv/bin/python3 dashboard.py
+# Open http://localhost:5000
 ```
 
-## Architecture
+## Configuration
 
-```
-ThreatMonitor (ABC)
-    ├── SynFloodMonitor   - DoS Detection
-    ├── PlainTextMonitor  - Credential Leakage
-    └── ARPSpoofMonitor   - MITM Detection
+Edit `config/allowlist.json`:
+```json
+{
+    "trusted_ips": {
+        "192.168.1.1": "aa:bb:cc:dd:ee:ff"
+    },
+    "allowed_ips": ["127.0.0.1"]
+}
 ```
 
 ## Project Structure
@@ -70,20 +60,16 @@ NetSentinel/
 │   ├── main.py              # Entry point
 │   ├── netsentinel.py       # Core engine
 │   ├── threat_monitor.py    # Abstract base class
-│   ├── syn_flood_monitor.py
-│   ├── plaintext_monitor.py
-│   └── arp_spoof_monitor.py
-├── tests/
-│   ├── test_syn_flood.py
-│   ├── test_plaintext.py
-│   ├── test_arp_spoof.py
-│   └── benchmark.py
-├── logs/
+│   ├── syn_flood_monitor.py # LRU-protected DoS detector
+│   ├── plaintext_monitor.py # Fast-path credential detector
+│   └── arp_spoof_monitor.py # TTL-cached MITM detector
+├── dashboard.py             # Web UI
 ├── config/
-│   └── settings.py
+│   └── allowlist.json       # Trusted IPs/MACs
+├── tests/
 └── requirements.txt
 ```
 
 ## License
 
-Educational use only. Use responsibly on networks you own or have explicit permission to monitor.
+Educational use only. Monitor networks you own or have permission to access.

@@ -1,0 +1,9 @@
+{
+    "trusted_ips": {
+        "192.168.1.1": "aa:bb:cc:dd:ee:ff"
+    },
+    "allowed_ips": [
+        "127.0.0.1"
+    ],
+    "notes": "Add your router/gateway MAC here. allowed_ips are ignored by all monitors."
+}

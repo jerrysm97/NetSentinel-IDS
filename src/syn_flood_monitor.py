@@ -1,10 +1,14 @@
 """
 syn_flood_monitor.py
 Detects volumetric Denial of Service attacks by tracking packet frequency.
+
+Security Fixes:
+- LRU eviction to prevent memory exhaustion from random source IPs
+- Bounded dictionary size
 """
 
 import time
-from collections import defaultdict
+from collections import OrderedDict
 from typing import Optional
 
 from scapy.all import IP, TCP
@@ -12,39 +16,65 @@ from scapy.all import IP, TCP
 from threat_monitor import ThreatMonitor
 
 
+class BoundedCounter:
+    """
+    Bounded counter with LRU eviction to prevent memory exhaustion.
+    Attacker cannot exhaust memory by flooding with random source IPs.
+    """
+    
+    def __init__(self, max_size: int = 10000):
+        self.max_size = max_size
+        self.counts = OrderedDict()
+    
+    def increment(self, key) -> int:
+        """Increment counter for key, return new count."""
+        if key in self.counts:
+            self.counts[key] += 1
+            self.counts.move_to_end(key)
+        else:
+            # Evict oldest if at capacity
+            while len(self.counts) >= self.max_size:
+                self.counts.popitem(last=False)
+            self.counts[key] = 1
+        return self.counts[key]
+    
+    def clear(self):
+        """Clear all counts."""
+        self.counts.clear()
+    
+    def __len__(self):
+        return len(self.counts)
+
+
 class SynFloodMonitor(ThreatMonitor):
     """
     Detects potential DoS attacks by monitoring SYN packet frequency.
     
-    Theory:
-        A legitimate TCP connection follows the three-way handshake:
-        Client sends SYN, server responds with SYN-ACK, client sends ACK.
-        
-        In a SYN flood attack, the attacker sends thousands of SYN packets
-        without completing the handshake, exhausting server resources.
-        
-    Implementation:
-        Uses a sliding window approach with a dictionary keyed by source IP.
-        Counts are reset every second to maintain accurate per-second rates.
+    Security Features:
+    - Bounded counter with max 10,000 tracked IPs (prevents memory DoS)
+    - LRU eviction for oldest IPs when limit reached
+    - Sliding window per-second rate limiting
     """
     
-    def __init__(self, threshold: int = 50):
+    def __init__(self, threshold: int = 50, max_tracked_ips: int = 10000):
         """
         Initialize the SYN flood detector.
         
         Args:
             threshold: Maximum SYN packets per second before alerting
-                      (Default: 50, which is aggressive for testing)
+            max_tracked_ips: Maximum IPs to track (LRU eviction after)
         """
         super().__init__("SYN Flood Detector")
         self.threshold = threshold
         
-        # Dictionary storing request counts per IP address
-        # Using defaultdict eliminates need for key existence checks
-        self.ip_counts = defaultdict(int)
+        # Bounded counter with LRU eviction
+        self.ip_counts = BoundedCounter(max_size=max_tracked_ips)
         
         # Timestamp for sliding window reset
         self.last_reset = time.time()
+        
+        # Stats
+        self.total_syn_packets = 0
         
     def inspect(self, packet) -> Optional[str]:
         """
@@ -70,13 +100,21 @@ class SynFloodMonitor(ThreatMonitor):
         
         # Check if this is a SYN packet (TCP flags = 0x02)
         if packet.haslayer(TCP) and packet[TCP].flags == 0x02:
-            self.ip_counts[src_ip] += 1
+            self.total_syn_packets += 1
+            count = self.ip_counts.increment(src_ip)
             
-            # Alert if threshold exceeded
-            if self.ip_counts[src_ip] > self.threshold:
+            # Alert if threshold exceeded (only alert once per window)
+            if count == self.threshold + 1:
                 self.alert_count += 1
                 return (f"[CRITICAL] DoS Attack Detected from {src_ip}: "
-                       f"{self.ip_counts[src_ip]} SYN packets/sec "
+                       f"{count} SYN packets/sec "
                        f"(Threshold: {self.threshold})")
         
         return None
+    
+    def get_statistics(self) -> dict:
+        """Return monitoring statistics."""
+        stats = super().get_statistics()
+        stats["total_syn_packets"] = self.total_syn_packets
+        stats["tracked_ips"] = len(self.ip_counts)
+        return stats
