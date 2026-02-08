@@ -1,11 +1,3 @@
-"""
-main.py
-Entry point for NetSentinel IDS.
-
-Note: For safer operation without full root, use Linux capabilities:
-  sudo setcap cap_net_raw,cap_net_admin=eip /path/to/venv/bin/python3
-"""
-
 import sys
 import os
 
@@ -13,48 +5,38 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from netsentinel import NetSentinel
-from syn_flood_monitor import SynFloodMonitor
-from plaintext_monitor import PlainTextMonitor
-from arp_spoof_monitor import ARPSpoofMonitor
 
 
 def main():
-    """Initialize and start the IDS with all monitors."""
+    """Initialize and start the NetSentinel Cortex IDS."""
     
     # Configuration
-    INTERFACE = "eth0"  # Change this to match your interface
+    INTERFACE = "lo0"  # Default to loopback for easier testing/dev
+    PLUGINS_DIR = "plugins"
     CONFIG_PATH = "config/allowlist.json"
     
-    # Create engine
-    ids = NetSentinel(interface=INTERFACE, config_path=CONFIG_PATH)
+    # Check if interface passed as arg
+    if len(sys.argv) > 1:
+        INTERFACE = sys.argv[1]
     
-    # Get trusted bindings from config for ARP monitor
-    trusted_bindings = ids.get_trusted_bindings()
-    
-    # Register all monitors with security features
-    ids.add_monitor(SynFloodMonitor(
-        threshold=50,
-        max_tracked_ips=10000  # LRU eviction after 10k IPs
-    ))
-    ids.add_monitor(PlainTextMonitor())
-    ids.add_monitor(ARPSpoofMonitor(
-        trusted_bindings=trusted_bindings,
-        max_entries=10000,  # LRU eviction
-        ttl_seconds=300     # 5 min TTL for DHCP handling
-    ))
+    # Create engine (Cortex v2.0)
+    ids = NetSentinel(
+        interface=INTERFACE, 
+        plugins_dir=PLUGINS_DIR,
+        config_path=CONFIG_PATH
+    )
     
     # Start monitoring (blocking call)
+    # Note: NetSentinel.start() now handles loading plugins via PluginLoader
     ids.start()
 
 
 if __name__ == "__main__":
-    # Check for root privileges
+    # Check for root privileges (required for Scapy on most systems)
     if os.geteuid() != 0:
-        print("Error: NetSentinel requires root privileges for packet capture")
-        print("Please run with: sudo python3 main.py")
+        print("\n\033[91m[!] Error: NetSentinel requires root privileges for packet capture\033[0m")
+        print("Please run with: sudo venv/bin/python3 src/main.py")
         print()
-        print("For safer operation (recommended), use Linux capabilities:")
-        print("  sudo setcap cap_net_raw,cap_net_admin=eip $(which python3)")
         sys.exit(1)
         
     main()
