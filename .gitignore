@@ -25,4 +25,12 @@ Thumbs.db
 # Distribution
 dist/
 build/
-*.egg-info/
+
+# Database
+*.db
+*.sqlite
+instance/
+
+# Testing
+verify_v75.py
+logs/test_alerts.json

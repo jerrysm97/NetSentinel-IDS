@@ -22,8 +22,14 @@ from typing import List, Dict, Any
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from flask import Flask, render_template_string, jsonify, request, Response
+from flask import Flask, render_template_string, jsonify, request, Response, redirect, url_for, flash
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_socketio import SocketIO, emit
+from werkzeug.security import generate_password_hash, check_password_hash
 from colorama import Fore, Style
+import threading
+import time
+from src.database import db, User, ScanResult, Alert
 
 try:
     from url_analyzer import OmniscientAnalyzer, OmniscientResult
@@ -33,6 +39,58 @@ except ImportError as e:
     ANALYZER_AVAILABLE = False
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.abspath("net_sentinel.db")}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+socketio = SocketIO(app, async_mode='threading', cors_allowed_origins='*')
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Background thread for monitoring alerts
+def alert_monitor():
+    """Poll DB for new alerts and emit to clients."""
+    last_check = datetime.utcnow()
+    print(f"{Fore.CYAN}>> [Background] Alert monitor started{Style.RESET_ALL}")
+    
+    with app.app_context():
+        while True:
+            try:
+                # Get alerts since last check
+                alerts = Alert.query.filter(Alert.timestamp > last_check).all()
+                if alerts:
+                    # Update timestamp to the latest alert
+                    last_check = alerts[-1].timestamp
+                    
+                    for alert in alerts:
+                        socketio.emit('new_alert', alert.to_dict())
+                        print(f"{Fore.YELLOW}>> [Alert] Emitted: {alert.alert_type}{Style.RESET_ALL}")
+                        
+                time.sleep(1)
+            except Exception as e:
+                print(f"{Fore.RED}>> [Monitor Error] {e}{Style.RESET_ALL}")
+                time.sleep(5)
+
+# Start monitor thread
+monitor_thread = threading.Thread(target=alert_monitor, daemon=True)
+monitor_thread.start()
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Initialize DB and create default user
+with app.app_context():
+    db.create_all()
+    if not User.query.filter_by(username='admin').first():
+        hashed_pw = generate_password_hash('admin', method='pbkdf2:sha256')
+        default_user = User(username='admin', password_hash=hashed_pw)
+        db.session.add(default_user)
+        db.session.commit()
+        print(f"{Fore.GREEN}>> [INIT] Created default user 'admin' with password 'admin'{Style.RESET_ALL}")
 
 HISTORY_FILE = "logs/analysis_history.json"
 os.makedirs("logs", exist_ok=True)
@@ -64,6 +122,113 @@ def get_history() -> List[Dict[str, Any]]:
     return []
 
 
+
+LOGIN_HTML = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSentinel // ACCESS CONTROL</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .login-container {
+            border: 2px solid #00ff41;
+            padding: 40px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+            position: relative;
+        }
+        .login-container::before {
+            content: "NETSENTINEL v7.5";
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            padding: 0 10px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: #fff;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #00ff41;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: #00ff41;
+            color: #000;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            box-shadow: 0 0 15px #00ff41;
+        }
+        .flash {
+            color: #ff0033;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="login-container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <input type="text" name="username" placeholder="IDENTITY" required autocomplete="off">
+            <input type="password" name="password" placeholder="PASSPHRASE" required>
+            <button type="submit">AUTHENTICATE</button>
+        </form>
+    </div>
+</body>
+</html>
+'''
+
 DASHBOARD_HTML = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -71,6 +236,7 @@ DASHBOARD_HTML = '''
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NetSentinel v6.0 // GOD VIEW</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -961,6 +1127,25 @@ DASHBOARD_HTML = '''
             a.click();
         }
         
+        let currentResult = null;
+        const analysisHistory = [];
+        const socket = io();
+
+        socket.on('connect', function() {
+            logToTerminal('>> [SYSTEM] CONNECTED TO REAL-TIME EVENT STREAM', 'success');
+        });
+
+        socket.on('new_alert', function(alert) {
+            const msg = `>> [IDS ALERT] ${alert.alert_type} from ${alert.source_ip}: ${alert.details}`;
+            logToTerminal(msg, 'threat');
+            
+            // Flash the border red
+            document.body.style.boxShadow = 'inset 0 0 50px rgba(255, 0, 0, 0.5)';
+            setTimeout(() => {
+                document.body.style.boxShadow = 'none';
+            }, 500);
+        });
+
         // Load history on start
         fetch('/history')
             .then(r => r.json())
@@ -973,52 +1158,111 @@ DASHBOARD_HTML = '''
 '''
 
 
-@app.route('/')
-@app.route('/dashboard')
-def dashboard():
-    return render_template_string(DASHBOARD_HTML)
+# --- Authentication Routes ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid username or password')
+            
+    return render_template_string(LOGIN_HTML)
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+@app.route('/')
+@login_required
+def dashboard():
+    """Render the God View Dashboard."""
+    return render_template_string(DASHBOARD_HTML, user=current_user)
 
 @app.route('/analyze', methods=['POST'])
+@login_required
 def analyze():
-    data = request.get_json()
+    data = request.json
     urls = data.get('urls', [])
-    
     if not urls:
         return jsonify({'error': 'No URLs provided'}), 400
-    
+        
     results = []
     
     if ANALYZER_AVAILABLE:
+        # Run async analysis in sync context
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
+        async def run_analysis():
+            analyzer = OmniscientAnalyzer()
+            async for result in analyzer.analyze_urls(urls):
+                results.append(result)
+                save_result(result)
+                
+                # Save to DB
+                try:
+                    # Convert TypedDict to dict if needed and dump json fields
+                    db_result = ScanResult(
+                        url=result['url'],
+                        risk_score=result['risk_score'],
+                        verdict=result['verdict'],
+                        category=result['category'],
+                        threat_badges=json.dumps(result.get('threat_badges', [])),
+                        full_json=json.dumps(result, default=str)
+                    )
+                    db.session.add(db_result)
+                    db.session.commit()
+                except Exception as e:
+                    print(f"DB Save Error: {e}")
+        
         try:
-            async def run_analysis():
-                analyzer = OmniscientAnalyzer()
-                async for result in analyzer.analyze_urls(urls):
-                    results.append(dict(result))
-                    save_result(dict(result))
-            
             loop.run_until_complete(run_analysis())
         finally:
             loop.close()
     else:
-        for url in urls:
-            results.append({
-                'url': url,
-                'risk_score': 0,
-                'category': 'ERROR',
-                'verdict': 'ERROR',
-                'error': 'Analyzer not available',
-                'evidence_log': ['>> ERROR: Analyzer module not loaded']
-            })
+        return jsonify({'error': 'Analyzer not available'}), 503
     
     return jsonify(results)
 
-
-@app.route('/history')
+@app.route('/history', methods=['GET'])
+@login_required
 def history():
-    return jsonify(get_history())
+    """Get analysis history from DB."""
+    try:
+        results = ScanResult.query.order_by(ScanResult.timestamp.desc()).limit(50).all()
+        return jsonify([r.to_dict() for r in results])
+    except Exception:
+        return jsonify(get_history())
+
+
+@app.route('/api/alerts', methods=['GET'])
+@login_required
+def get_alerts():
+    """Get IDS alerts from DB."""
+    try:
+        # Get alerts newer than timestamp if provided
+        since = request.args.get('since')
+        query = Alert.query.order_by(Alert.timestamp.desc())
+        
+        if since:
+            try:
+                since_dt = datetime.fromisoformat(since)
+                query = query.filter(Alert.timestamp > since_dt)
+            except ValueError:
+                pass
+                
+        alerts = query.limit(50).all()
+        return jsonify([a.to_dict() for a in alerts])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
@@ -1029,4 +1273,4 @@ if __name__ == '__main__':
     print(f"Analyzer: {Fore.GREEN if ANALYZER_AVAILABLE else Fore.RED}{'ONLINE' if ANALYZER_AVAILABLE else 'OFFLINE'}{Style.RESET_ALL}")
     print(f"\nPress Ctrl+C to terminate\n")
     
-    app.run(host='0.0.0.0', port=8080, debug=False, threaded=True)
+    socketio.run(app, host='0.0.0.0', port=8080, debug=False)

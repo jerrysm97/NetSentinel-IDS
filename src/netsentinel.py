@@ -32,25 +32,76 @@ POISON_PILL = None
 ALERTS_FILE = "logs/alerts.json"
 
 
+import sqlite3
+
 class AlertLogger:
-    """Thread-safe alert logger that writes to shared JSON file."""
+    """Thread-safe alert logger that writes to shared JSON file and SQLite DB."""
     
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: str, db_path: str = "net_sentinel.db"):
         self.filepath = filepath
+        self.db_path = db_path
         self.lock = threading.Lock()
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        self._init_db()
+        
+    def _init_db(self):
+        """Initialize DB table if it doesn't exist (fallback)."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS alert (
+                        id INTEGER PRIMARY KEY,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        alert_type VARCHAR(100) NOT NULL,
+                        source_ip VARCHAR(50),
+                        details TEXT,
+                        severity VARCHAR(20)
+                    )
+                ''')
+                conn.commit()
+        except Exception as e:
+            logging.error(f"DB Init failed: {e}")
         
     def log(self, alert: dict):
-        """Append alert to JSON file (thread-safe)."""
-        alert["timestamp"] = datetime.now().isoformat()
+        """Append alert to JSON file and SQLite DB (thread-safe)."""
+        timestamp = datetime.now()
+        alert["timestamp"] = timestamp.isoformat()
         line = json.dumps(alert) + "\n"
         
         with self.lock:
+            # Write to JSON (Backup)
             try:
                 with open(self.filepath, 'a') as f:
                     f.write(line)
             except Exception as e:
-                logging.error(f"Failed to write alert: {e}")
+                logging.error(f"Failed to write alert to JSON: {e}")
+            
+            # Write to SQLite (Primary)
+            try:
+                # Parse alert message for fields
+                # Expected format differs by monitor, but usually contains "IP: <ip>" or similar
+                # We'll treat the whole message as 'details' and try to extract IP/Type
+                
+                alert_type = "Threat Detected"
+                severity = alert.get("severity", "INFO")
+                message = alert.get("message", "")
+                source_ip = "Unknown"
+                
+                # Simple heuristic extraction
+                if "SYN Flood" in message: alert_type = "SYN Flood"
+                elif "Plaintext" in message: alert_type = "Credential Leak"
+                elif "ARP Spoofing" in message: alert_type = "ARP Spoofing"
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "INSERT INTO alert (timestamp, alert_type, source_ip, details, severity) VALUES (?, ?, ?, ?, ?)",
+                        (timestamp, alert_type, source_ip, message, severity)
+                    )
+                    conn.commit()
+            except Exception as e:
+                logging.error(f"Failed to write alert to DB: {e}")
                 
     def clear(self):
         """Clear the alert file."""
