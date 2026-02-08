@@ -1,14 +1,16 @@
 """
 dashboard.py
-NetSentinel + Scam Sentinel - Cyberpunk NetRunner Dashboard
+NetSentinel v5.0 - Minority Report Dashboard
 
-THEME: Neon green/pink on void black with CRT scanlines
-FEATURES:
-- Terminal typing effect for live logs
-- Google Dork intelligence links
-- Forensic-grade URL analysis
-- Real-time threat visualization
+Theme: Neuromancer-inspired deep purple and blue palette
+Features:
+- Reality Distortion Field Meter (truth gauge)
+- Real-time evidence streaming via SSE
+- Sortable results table with expandable evidence logs
+- JSON/CSV export functionality
 """
+
+from __future__ import annotations
 
 import sys
 import os
@@ -16,61 +18,50 @@ import json
 import asyncio
 from datetime import datetime
 from pathlib import Path
+from typing import List, Dict, Any, Generator
+import queue
+import threading
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from flask import Flask, render_template_string, jsonify, request
+from flask import Flask, render_template_string, jsonify, request, Response
 from colorama import Fore, Style
 
 try:
-    from url_analyzer import analyze_url_async, get_analyzer
-    URL_ANALYZER_AVAILABLE = True
+    from url_analyzer import NetSentinelAnalyzer, analyze_url_async, AnalysisResult
+    ANALYZER_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: URL analyzer import failed: {e}")
-    URL_ANALYZER_AVAILABLE = False
+    print(f"Warning: Analyzer import failed: {e}", file=sys.stderr)
+    ANALYZER_AVAILABLE = False
 
 app = Flask(__name__)
 
-ALERTS_FILE = "logs/alerts.json"
+# Storage for analysis history
 HISTORY_FILE = "logs/analysis_history.json"
 os.makedirs("logs", exist_ok=True)
 
 
-def read_alerts():
-    alerts = []
-    try:
-        if os.path.exists(ALERTS_FILE):
-            with open(ALERTS_FILE, 'r') as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            alerts.append(json.loads(line))
-                        except:
-                            pass
-    except:
-        pass
-    return alerts[-100:]
-
-
-def save_analysis(result):
+def save_result(result: Dict[str, Any]) -> None:
+    """Save analysis result to history."""
     try:
         history = []
         if os.path.exists(HISTORY_FILE):
             with open(HISTORY_FILE, 'r') as f:
                 history = json.load(f)
         history.append(result)
-        history = history[-50:]
+        history = history[-100:]
         with open(HISTORY_FILE, 'w') as f:
             json.dump(history, f, indent=2, default=str)
-    except:
-        pass
+    except Exception as e:
+        print(f"Save error: {e}", file=sys.stderr)
 
 
-def get_history():
+def get_history() -> List[Dict[str, Any]]:
+    """Load analysis history."""
     try:
         if os.path.exists(HISTORY_FILE):
             with open(HISTORY_FILE, 'r') as f:
-                return json.load(f)[-30:]
+                return json.load(f)[-50:]
     except:
         pass
     return []
@@ -82,18 +73,21 @@ DASHBOARD_HTML = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCAM SENTINEL // NetRunner Interface</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <title>NetSentinel v5.0 // Minority Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --neon-green: #00ff41;
-            --neon-pink: #ff00ff;
-            --neon-cyan: #00ffff;
-            --neon-red: #ff0040;
-            --neon-yellow: #ffff00;
-            --void-black: #0a0a0a;
-            --dark-gray: #1a1a1a;
-            --terminal-green: #33ff33;
+            --purple-deep: #301934;
+            --purple-mid: #4a1259;
+            --blue-dark: #0f3460;
+            --blue-glow: #16c2d5;
+            --cyan-bright: #00fff7;
+            --magenta: #e100ff;
+            --red-alert: #ff0044;
+            --green-truth: #00ff88;
+            --yellow-warn: #ffcc00;
+            --bg-void: #0a0a12;
+            --text-main: #e8e8f0;
         }
         
         * {
@@ -104,13 +98,13 @@ DASHBOARD_HTML = '''
         
         body {
             font-family: 'JetBrains Mono', monospace;
-            background: var(--void-black);
-            color: var(--neon-green);
+            background: linear-gradient(135deg, var(--bg-void) 0%, var(--purple-deep) 50%, var(--blue-dark) 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
             min-height: 100vh;
-            overflow-x: hidden;
         }
         
-        /* CRT Scanlines */
+        /* Scanlines overlay */
         body::before {
             content: '';
             position: fixed;
@@ -119,41 +113,15 @@ DASHBOARD_HTML = '''
             width: 100%;
             height: 100%;
             pointer-events: none;
-            background: 
-                repeating-linear-gradient(
-                    0deg,
-                    rgba(0,0,0,0.15) 0px,
-                    rgba(0,0,0,0.15) 1px,
-                    transparent 1px,
-                    transparent 2px
-                );
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.1) 0px,
+                rgba(0,0,0,0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
             z-index: 10000;
         }
-        
-        /* CRT Flicker */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            background: rgba(0,255,65,0.02);
-            animation: flicker 0.15s infinite;
-            z-index: 9999;
-        }
-        
-        @keyframes flicker {
-            0%, 100% { opacity: 0.97; }
-            50% { opacity: 1; }
-        }
-        
-        /* Glow effects */
-        .glow-green { text-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green), 0 0 30px var(--neon-green); }
-        .glow-pink { text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink); }
-        .glow-cyan { text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan); }
-        .glow-red { text-shadow: 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
         
         .container {
             max-width: 1400px;
@@ -168,722 +136,756 @@ DASHBOARD_HTML = '''
             text-align: center;
             padding: 30px;
             margin-bottom: 30px;
-            border: 1px solid var(--neon-green);
-            background: linear-gradient(180deg, rgba(0,255,65,0.1) 0%, transparent 100%);
+            border: 1px solid var(--magenta);
+            background: rgba(48, 25, 52, 0.8);
             position: relative;
+            overflow: hidden;
         }
         
         header::before {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
+            left: -100%;
+            width: 200%;
             height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon-green), var(--neon-pink), var(--neon-cyan), transparent);
-            animation: scanline 2s linear infinite;
+            background: linear-gradient(90deg, transparent, var(--magenta), var(--cyan-bright), transparent);
+            animation: headerScan 3s linear infinite;
         }
         
-        @keyframes scanline {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        @keyframes headerScan {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(50%); }
         }
         
         .logo {
             font-family: 'Orbitron', sans-serif;
             font-size: 2.5rem;
-            color: var(--neon-green);
+            background: linear-gradient(90deg, var(--cyan-bright), var(--magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             letter-spacing: 4px;
         }
         
-        .logo span {
-            color: var(--neon-pink);
-        }
-        
         .subtitle {
-            color: var(--neon-cyan);
-            font-size: 0.8rem;
-            letter-spacing: 6px;
-            margin-top: 10px;
-            opacity: 0.8;
-        }
-        
-        .status-bar {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 20px;
+            color: var(--blue-glow);
             font-size: 0.75rem;
+            letter-spacing: 4px;
+            margin-top: 10px;
+            opacity: 0.9;
         }
         
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-        
-        .status-dot.active { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-        .status-dot.warning { background: var(--neon-yellow); }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .philosophy {
+            color: var(--yellow-warn);
+            font-style: italic;
+            font-size: 0.85rem;
+            margin-top: 15px;
         }
         
         /* Input Section */
         .input-section {
-            margin-bottom: 30px;
+            background: rgba(15, 52, 96, 0.6);
+            border: 1px solid var(--blue-glow);
             padding: 25px;
-            border: 1px solid rgba(0,255,65,0.3);
-            background: rgba(0,0,0,0.5);
+            margin-bottom: 30px;
         }
         
         .input-label {
-            color: var(--neon-cyan);
+            color: var(--cyan-bright);
             font-size: 0.8rem;
             letter-spacing: 2px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             display: block;
         }
         
-        .input-wrapper {
+        .url-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            background: var(--bg-void);
+            border: 1px solid var(--purple-mid);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            outline: none;
+        }
+        
+        .url-textarea:focus {
+            border-color: var(--magenta);
+            box-shadow: 0 0 20px rgba(225, 0, 255, 0.2);
+        }
+        
+        .url-textarea::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        
+        .btn-group {
             display: flex;
             gap: 15px;
+            margin-top: 15px;
         }
         
-        .target-input {
-            flex: 1;
-            padding: 15px 20px;
-            background: var(--void-black);
-            border: 2px solid var(--neon-green);
-            color: var(--neon-green);
-            font-family: inherit;
-            font-size: 1.1rem;
-            outline: none;
-            transition: all 0.3s;
-        }
-        
-        .target-input:focus {
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 20px rgba(255,0,255,0.3);
-        }
-        
-        .target-input::placeholder {
-            color: rgba(0,255,65,0.4);
-        }
-        
-        .scan-btn {
-            padding: 15px 40px;
-            background: transparent;
-            border: 2px solid var(--neon-pink);
-            color: var(--neon-pink);
+        .btn {
+            padding: 12px 25px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 2px;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            border: none;
             cursor: pointer;
             transition: all 0.3s;
-            text-transform: uppercase;
         }
         
-        .scan-btn:hover {
-            background: var(--neon-pink);
-            color: var(--void-black);
-            box-shadow: 0 0 30px rgba(255,0,255,0.5);
+        .btn-analyze {
+            background: linear-gradient(135deg, var(--magenta), var(--purple-mid));
+            color: white;
+            border: 1px solid var(--magenta);
         }
         
-        .scan-btn:disabled {
-            opacity: 0.3;
+        .btn-analyze:hover {
+            box-shadow: 0 0 30px rgba(225, 0, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-analyze:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
         
-        /* Terminal Output */
-        .terminal {
-            background: #000;
-            border: 1px solid var(--neon-green);
-            padding: 20px;
-            font-size: 0.85rem;
-            line-height: 1.8;
-            max-height: 400px;
-            overflow-y: auto;
+        .btn-export {
+            background: transparent;
+            color: var(--cyan-bright);
+            border: 1px solid var(--cyan-bright);
+        }
+        
+        .btn-export:hover {
+            background: rgba(22, 194, 213, 0.2);
+        }
+        
+        /* Reality Distortion Field Meter */
+        .meter-section {
             display: none;
+            margin-bottom: 30px;
         }
         
-        .terminal.active {
+        .meter-section.active {
             display: block;
         }
         
-        .terminal-line {
+        .meter-container {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+            background: rgba(10, 10, 18, 0.9);
+            border: 1px solid var(--purple-mid);
+        }
+        
+        .meter-wrapper {
+            text-align: center;
+        }
+        
+        .meter-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--cyan-bright);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        
+        .gauge-container {
+            position: relative;
+            width: 250px;
+            height: 150px;
+            margin: 0 auto;
+        }
+        
+        .gauge-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .gauge-value {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+        }
+        
+        .gauge-label {
+            margin-top: 20px;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 4px;
+        }
+        
+        .gauge-label.truthful { background: rgba(0, 255, 136, 0.2); color: var(--green-truth); border: 1px solid var(--green-truth); }
+        .gauge-label.suspicious { background: rgba(255, 204, 0, 0.2); color: var(--yellow-warn); border: 1px solid var(--yellow-warn); }
+        .gauge-label.deceptive { background: rgba(255, 100, 0, 0.2); color: #ff6600; border: 1px solid #ff6600; }
+        .gauge-label.malicious { background: rgba(255, 0, 68, 0.2); color: var(--red-alert); border: 1px solid var(--red-alert); }
+        
+        /* Evidence Terminal */
+        .evidence-section {
+            margin-bottom: 30px;
+        }
+        
+        .evidence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--purple-deep);
+            border: 1px solid var(--purple-mid);
+            border-bottom: none;
+        }
+        
+        .evidence-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--cyan-bright);
+            letter-spacing: 2px;
+        }
+        
+        .evidence-terminal {
+            background: #000;
+            border: 1px solid var(--purple-mid);
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        
+        .log-line {
             opacity: 0;
-            animation: typeIn 0.05s forwards;
+            animation: typeIn 0.1s forwards;
         }
         
         @keyframes typeIn {
             to { opacity: 1; }
         }
         
-        .terminal-line.info { color: var(--neon-green); }
-        .terminal-line.warning { color: var(--neon-yellow); }
-        .terminal-line.error, .terminal-line.critical { color: var(--neon-red); }
-        .terminal-line.success { color: var(--neon-cyan); }
+        .log-line.info { color: var(--cyan-bright); }
+        .log-line.warn { color: var(--yellow-warn); }
+        .log-line.error { color: var(--red-alert); }
+        .log-line.success { color: var(--green-truth); }
+        .log-line.lie { color: var(--magenta); text-shadow: 0 0 10px var(--magenta); }
         
-        .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 18px;
-            background: var(--neon-green);
-            animation: cursorBlink 0.7s infinite;
-            vertical-align: text-bottom;
-        }
-        
-        @keyframes cursorBlink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        
-        /* Results Section */
-        .results {
-            display: none;
-            margin-top: 30px;
-        }
-        
-        .results.active {
-            display: block;
-        }
-        
-        .verdict-display {
-            text-align: center;
-            padding: 40px;
+        /* Results Table */
+        .results-section {
             margin-bottom: 30px;
-            border: 2px solid;
         }
         
-        .verdict-display.safe {
-            border-color: var(--neon-green);
-            background: rgba(0,255,65,0.05);
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(10, 10, 18, 0.8);
         }
         
-        .verdict-display.suspicious {
-            border-color: var(--neon-yellow);
-            background: rgba(255,255,0,0.05);
-        }
-        
-        .verdict-display.malicious {
-            border-color: var(--neon-red);
-            background: rgba(255,0,64,0.05);
-            animation: dangerPulse 1s infinite;
-        }
-        
-        @keyframes dangerPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255,0,64,0.3); }
-            50% { box-shadow: 0 0 40px rgba(255,0,64,0.6); }
-        }
-        
-        .score-display {
+        .results-table th {
+            background: var(--purple-deep);
+            padding: 15px;
+            text-align: left;
             font-family: 'Orbitron', sans-serif;
-            font-size: 5rem;
-            margin-bottom: 10px;
+            font-size: 0.8rem;
+            color: var(--cyan-bright);
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--magenta);
+            cursor: pointer;
         }
         
-        .verdict-text {
-            font-size: 1.5rem;
-            letter-spacing: 4px;
+        .results-table th:hover {
+            background: var(--purple-mid);
         }
         
-        /* Threat Grid */
-        .threat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .threat-card {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(0,255,65,0.3);
-            padding: 20px;
-        }
-        
-        .threat-card h3 {
-            color: var(--neon-cyan);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(0,255,65,0.2);
-        }
-        
-        .threat-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 0;
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             font-size: 0.85rem;
         }
         
-        .threat-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .results-table tr:hover {
+            background: rgba(225, 0, 255, 0.1);
+        }
+        
+        .truth-badge {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .truth-badge.truthful { background: rgba(0, 255, 136, 0.2); color: var(--green-truth); }
+        .truth-badge.suspicious { background: rgba(255, 204, 0, 0.2); color: var(--yellow-warn); }
+        .truth-badge.deceptive { background: rgba(255, 100, 0, 0.2); color: #ff6600; }
+        .truth-badge.malicious { background: rgba(255, 0, 68, 0.2); color: var(--red-alert); }
+        .truth-badge.error { background: rgba(128, 128, 128, 0.2); color: #888; }
+        
+        .expand-btn {
+            background: transparent;
+            border: 1px solid var(--blue-glow);
+            color: var(--blue-glow);
+            padding: 4px 8px;
+            cursor: pointer;
             font-size: 0.7rem;
         }
         
-        .threat-icon.danger { background: rgba(255,0,64,0.3); color: var(--neon-red); }
-        .threat-icon.warning { background: rgba(255,255,0,0.3); color: var(--neon-yellow); }
-        .threat-icon.ok { background: rgba(0,255,65,0.3); color: var(--neon-green); }
-        
-        /* Intel Links */
-        .intel-section {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid var(--neon-cyan);
-            padding: 20px;
-            margin-bottom: 30px;
+        .expand-btn:hover {
+            background: rgba(22, 194, 213, 0.2);
         }
         
-        .intel-section h3 {
-            color: var(--neon-cyan);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
+        .evidence-row {
+            display: none;
         }
         
-        .intel-links {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
+        .evidence-row.visible {
+            display: table-row;
         }
         
-        .intel-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 15px;
-            background: rgba(0,255,255,0.1);
-            border: 1px solid rgba(0,255,255,0.3);
-            color: var(--neon-cyan);
-            text-decoration: none;
+        .evidence-row td {
+            background: #111;
+            padding: 15px 20px;
+        }
+        
+        .evidence-content {
             font-size: 0.8rem;
-            transition: all 0.3s;
+            line-height: 1.6;
+            color: var(--cyan-bright);
         }
         
-        .intel-link:hover {
-            background: var(--neon-cyan);
-            color: var(--void-black);
+        /* Analysis Details */
+        .analysis-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
         }
         
-        /* Risk Summary */
-        .risk-summary {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid var(--neon-pink);
-            padding: 25px;
-            margin-bottom: 30px;
-            white-space: pre-wrap;
-            font-size: 0.9rem;
-            line-height: 1.8;
+        .detail-card {
+            background: rgba(48, 25, 52, 0.5);
+            border: 1px solid var(--purple-mid);
+            padding: 15px;
         }
         
-        /* History */
-        .history-section {
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 1px solid rgba(0,255,65,0.2);
+        .detail-card h4 {
+            color: var(--magenta);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
         }
         
-        .history-section h2 {
-            color: var(--neon-cyan);
-            font-size: 1rem;
-            letter-spacing: 3px;
-            margin-bottom: 20px;
-        }
-        
-        .history-item {
+        .detail-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border: 1px solid rgba(0,255,65,0.2);
-            margin-bottom: 10px;
+            padding: 5px 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .detail-label { color: rgba(255,255,255,0.6); }
+        .detail-value { color: var(--text-main); }
+        
+        /* Dark Mode Toggle */
+        .dark-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--purple-mid);
+            border: 1px solid var(--magenta);
+            color: var(--text-main);
+            padding: 10px 15px;
             cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .history-item:hover {
-            border-color: var(--neon-green);
-            background: rgba(0,255,65,0.05);
-        }
-        
-        .history-item.safe { border-left: 3px solid var(--neon-green); }
-        .history-item.suspicious { border-left: 3px solid var(--neon-yellow); }
-        .history-item.malicious { border-left: 3px solid var(--neon-red); }
-        
-        .history-domain {
-            font-size: 0.9rem;
-        }
-        
-        .history-score {
-            font-family: 'Orbitron', sans-serif;
-        }
-        
-        /* Loading */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .loading.active {
-            display: block;
-        }
-        
-        .loading-text {
-            color: var(--neon-pink);
-            animation: loadingPulse 1s infinite;
-        }
-        
-        @keyframes loadingPulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: var(--void-black);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--neon-green);
+            font-family: inherit;
+            font-size: 0.8rem;
+            z-index: 1000;
         }
         
         footer {
             text-align: center;
             padding: 30px;
-            color: rgba(0,255,65,0.4);
+            color: rgba(232, 232, 240, 0.4);
             font-size: 0.7rem;
             letter-spacing: 2px;
         }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-void); }
+        ::-webkit-scrollbar-thumb { background: var(--purple-mid); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--magenta); }
     </style>
 </head>
 <body>
+    <button class="dark-toggle" onclick="toggleTheme()">☀ / ☾</button>
+    
     <div class="container">
         <header>
-            <div class="logo glow-green">SCAM <span class="glow-pink">SENTINEL</span></div>
-            <div class="subtitle">// NETRUNNER THREAT INTELLIGENCE INTERFACE //</div>
-            <div class="status-bar">
-                <div class="status-item">
-                    <span class="status-dot active"></span>
-                    <span>ANALYZER: ONLINE</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-dot active"></span>
-                    <span>FORENSICS: READY</span>
-                </div>
-                <div class="status-item">
-                    <span id="clock">--:--:--</span>
-                </div>
-            </div>
+            <div class="logo">NETSENTINEL v5.0</div>
+            <div class="subtitle">// MINORITY REPORT // COGNITIVE TRUTH ENGINE //</div>
+            <div class="philosophy">"The Truth is in the Context, not the Ports."</div>
         </header>
         
         <div class="input-section">
-            <label class="input-label">&gt; ENTER TARGET URL FOR ANALYSIS</label>
-            <div class="input-wrapper">
-                <input type="text" id="target-input" class="target-input" 
-                       placeholder="https://suspicious-site.com" 
-                       onkeypress="if(event.key==='Enter')initiateScan()">
-                <button class="scan-btn" id="scan-btn" onclick="initiateScan()">SCAN</button>
+            <label class="input-label">&gt; ENTER TARGET URLs (one per line)</label>
+            <textarea id="url-input" class="url-textarea" 
+                      placeholder="https://suspicious-site.example.com&#10;https://fake-paypal.xyz&#10;https://legitimate-site.com"></textarea>
+            <div class="btn-group">
+                <button class="btn btn-analyze" id="analyze-btn" onclick="analyzeUrls()">
+                    ANALYZE TRUTH
+                </button>
+                <button class="btn btn-export" onclick="exportJSON()">EXPORT JSON</button>
+                <button class="btn btn-export" onclick="exportCSV()">EXPORT CSV</button>
             </div>
         </div>
         
-        <div class="terminal" id="terminal">
-            <div id="terminal-output"></div>
-            <span class="cursor"></span>
-        </div>
-        
-        <div class="loading" id="loading">
-            <div class="loading-text">[ANALYZING TARGET...]</div>
-        </div>
-        
-        <div class="results" id="results">
-            <div class="verdict-display" id="verdict-display">
-                <div class="score-display" id="score-display">--</div>
-                <div class="verdict-text" id="verdict-text">ANALYZING...</div>
+        <div class="meter-section" id="meter-section">
+            <div class="meter-container">
+                <div class="meter-wrapper">
+                    <div class="meter-title">REALITY DISTORTION FIELD</div>
+                    <canvas id="gauge-canvas" width="250" height="150"></canvas>
+                    <div class="gauge-label" id="gauge-label">Analyzing...</div>
+                </div>
             </div>
-            
-            <div class="risk-summary" id="risk-summary"></div>
-            
-            <div class="intel-section" id="intel-section">
-                <h3>&gt; INTELLIGENCE LINKS (GOOGLE DORKS)</h3>
-                <div class="intel-links" id="intel-links"></div>
-            </div>
-            
-            <div class="threat-grid" id="threat-grid"></div>
         </div>
         
-        <div class="history-section">
-            <h2>&gt; SCAN HISTORY</h2>
-            <div id="history-list"></div>
+        <div class="evidence-section">
+            <div class="evidence-header">
+                <span class="evidence-title">EVIDENCE STREAM</span>
+                <button class="btn btn-export" onclick="clearLogs()" style="padding: 5px 10px; font-size: 0.7rem;">CLEAR</button>
+            </div>
+            <div class="evidence-terminal" id="evidence-terminal">
+                <div class="log-line info">&gt;&gt; COGNITIVE ENGINE READY</div>
+                <div class="log-line info">&gt;&gt; Awaiting targets for truth analysis...</div>
+            </div>
+        </div>
+        
+        <div class="results-section">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">URL ↕</th>
+                        <th onclick="sortTable(1)">TRUTH SCORE ↕</th>
+                        <th onclick="sortTable(2)">VERDICT ↕</th>
+                        <th onclick="sortTable(3)">IMPERSONATION ↕</th>
+                        <th onclick="sortTable(4)">MANIP INDEX ↕</th>
+                        <th>EVIDENCE</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body"></tbody>
+            </table>
         </div>
         
         <footer>
-            SCAM SENTINEL v3.0 // FORENSIC URL ANALYSIS ENGINE // STAY VIGILANT
+            NETSENTINEL v5.0 // COGNITIVE TRUTH ENGINE // ETHICAL USE ONLY
         </footer>
     </div>
     
     <script>
-        // Clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {hour12: false});
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+        let analysisResults = [];
+        let sortDirection = {};
         
-        // Terminal typing effect
-        async function typeLine(container, text, level, delay = 30) {
+        // Gauge drawing
+        function drawGauge(score, verdict) {
+            const canvas = document.getElementById('gauge-canvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height - 10;
+            const radius = height - 30;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw arc background
+            const colors = [
+                { stop: 0, color: '#ff0044' },
+                { stop: 0.25, color: '#ff6600' },
+                { stop: 0.5, color: '#ffcc00' },
+                { stop: 0.75, color: '#88ff00' },
+                { stop: 1, color: '#00ff88' }
+            ];
+            
+            const gradient = ctx.createLinearGradient(0, 0, width, 0);
+            colors.forEach(c => gradient.addColorStop(c.stop, c.color));
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
+            ctx.lineWidth = 15;
+            ctx.strokeStyle = '#222';
+            ctx.stroke();
+            
+            // Draw filled arc based on score
+            const endAngle = Math.PI + (Math.PI * (100 - score) / 100);
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, endAngle, false);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 15;
+            ctx.stroke();
+            
+            // Draw score
+            ctx.font = 'bold 36px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = score >= 75 ? '#00ff88' : score >= 50 ? '#ffcc00' : score >= 25 ? '#ff6600' : '#ff0044';
+            ctx.fillText(score.toFixed(0), centerX, centerY - 20);
+            
+            ctx.font = '12px JetBrains Mono';
+            ctx.fillStyle = '#888';
+            ctx.fillText('TRUTH SCORE', centerX, centerY + 5);
+            
+            // Update label
+            const label = document.getElementById('gauge-label');
+            label.textContent = verdict;
+            label.className = 'gauge-label ' + verdict.toLowerCase().replace('_', '');
+        }
+        
+        // Log to terminal with typing effect
+        async function logToTerminal(message, type = 'info') {
+            const terminal = document.getElementById('evidence-terminal');
             const line = document.createElement('div');
-            line.className = 'terminal-line ' + level;
-            container.appendChild(line);
+            line.className = 'log-line ' + type;
             
-            for (let i = 0; i < text.length; i++) {
-                line.textContent += text[i];
-                container.scrollTop = container.scrollHeight;
-                await new Promise(r => setTimeout(r, delay));
+            // Check for lie detection
+            if (message.includes('LIE DETECTED') || message.includes('IDENTITY MISMATCH')) {
+                type = 'lie';
+                line.className = 'log-line lie';
+            } else if (message.includes('ERROR')) {
+                line.className = 'log-line error';
+            } else if (message.includes('VERDICT') && message.includes('TRUTHFUL')) {
+                line.className = 'log-line success';
+            } else if (message.includes('⚠️') || message.includes('ANOMALY')) {
+                line.className = 'log-line warn';
             }
-            return line;
+            
+            line.textContent = message;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+            
+            await new Promise(r => setTimeout(r, 50));
         }
         
-        async function typeLog(log) {
-            const container = document.getElementById('terminal-output');
-            const time = log.timestamp || '--:--:--';
-            const module = log.module || 'SYS';
-            const msg = log.message || '';
-            const level = log.level || 'info';
-            
-            const prefix = `[${time}] [${module}] `;
-            await typeLine(container, prefix + msg, level, 15);
+        function clearLogs() {
+            document.getElementById('evidence-terminal').innerHTML = 
+                '<div class="log-line info">>> EVIDENCE LOG CLEARED</div>';
         }
         
-        // Main scan function
-        async function initiateScan() {
-            const input = document.getElementById('target-input');
-            const url = input.value.trim();
+        async function analyzeUrls() {
+            const textarea = document.getElementById('url-input');
+            const urls = textarea.value.split('\\n').map(u => u.trim()).filter(u => u.length > 0);
             
-            if (!url) {
-                alert('Enter a target URL');
+            if (urls.length === 0) {
+                alert('Please enter at least one URL');
                 return;
             }
             
-            // Reset UI
-            document.getElementById('terminal').classList.add('active');
-            document.getElementById('terminal-output').innerHTML = '';
-            document.getElementById('results').classList.remove('active');
-            document.getElementById('scan-btn').disabled = true;
-            
-            // Initial messages
-            const output = document.getElementById('terminal-output');
-            await typeLine(output, '[SYSTEM] Initializing forensic analysis engine...', 'info', 20);
-            await typeLine(output, '[SYSTEM] Target acquired: ' + url, 'success', 20);
-            await new Promise(r => setTimeout(r, 300));
-            
-            try {
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({url})
-                });
-                
-                const result = await response.json();
-                
-                if (result.error) {
-                    await typeLine(output, '[ERROR] ' + result.error, 'error', 20);
-                    return;
-                }
-                
-                // Type out logs with effect
-                for (const log of result.logs || []) {
-                    await typeLog(log);
-                    await new Promise(r => setTimeout(r, 100));
-                }
-                
-                await new Promise(r => setTimeout(r, 500));
-                await typeLine(output, '[COMPLETE] Analysis finished in ' + result.analysis_duration_ms + 'ms', 'success', 20);
-                
-                // Show results
-                displayResults(result);
-                loadHistory();
-                
-            } catch (e) {
-                await typeLine(output, '[FATAL] Connection failed: ' + e.message, 'error', 20);
-            } finally {
-                document.getElementById('scan-btn').disabled = false;
+            if (urls.length > 100) {
+                alert('Maximum 100 URLs per batch');
+                return;
             }
+            
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true;
+            btn.textContent = 'ANALYZING...';
+            
+            document.getElementById('meter-section').classList.add('active');
+            await logToTerminal('>> INITIATING COGNITIVE TRUTH ENGINE', 'info');
+            await logToTerminal(`>> ${urls.length} target(s) queued for analysis`, 'info');
+            
+            analysisResults = [];
+            
+            for (const url of urls) {
+                try {
+                    await logToTerminal(`>> SCANNING: ${url}`, 'info');
+                    
+                    const response = await fetch('/analyze', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({urls: [url]})
+                    });
+                    
+                    const results = await response.json();
+                    
+                    if (results.length > 0) {
+                        const result = results[0];
+                        analysisResults.push(result);
+                        
+                        // Stream evidence logs
+                        for (const log of result.evidence_log || []) {
+                            await logToTerminal(log);
+                        }
+                        
+                        drawGauge(result.truth_score, result.verdict);
+                        addResultToTable(result);
+                    }
+                } catch (e) {
+                    await logToTerminal(`>> ERROR: ${e.message}`, 'error');
+                }
+            }
+            
+            await logToTerminal('>> ANALYSIS COMPLETE', 'success');
+            btn.disabled = false;
+            btn.textContent = 'ANALYZE TRUTH';
         }
         
-        function displayResults(result) {
-            document.getElementById('results').classList.add('active');
+        function addResultToTable(result) {
+            const tbody = document.getElementById('results-body');
+            const rowId = 'row-' + Date.now();
             
-            // Verdict
-            const verdictDiv = document.getElementById('verdict-display');
-            verdictDiv.className = 'verdict-display ' + result.verdict.toLowerCase();
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td title="${result.url}">${result.url.substring(0, 40)}${result.url.length > 40 ? '...' : ''}</td>
+                <td><strong>${result.truth_score}</strong>/100</td>
+                <td><span class="truth-badge ${result.verdict.toLowerCase().replace('_', '')}">${result.verdict}</span></td>
+                <td>${result.semantic_analysis?.claimed_brands?.join(', ') || 'None'}</td>
+                <td>${result.psychological_analysis?.manipulative_index?.toFixed(1) || 0}</td>
+                <td><button class="expand-btn" onclick="toggleEvidence('${rowId}')">DETAILS</button></td>
+            `;
+            tbody.appendChild(row);
             
-            document.getElementById('score-display').textContent = result.score;
-            document.getElementById('score-display').className = 'score-display glow-' + 
-                (result.verdict === 'SAFE' ? 'green' : (result.verdict === 'SUSPICIOUS' ? 'pink' : 'red'));
-            
-            document.getElementById('verdict-text').textContent = result.verdict;
-            
-            // Risk summary
-            document.getElementById('risk-summary').textContent = result.risk_summary;
-            
-            // Intel links
-            const intelContainer = document.getElementById('intel-links');
-            intelContainer.innerHTML = '';
-            const dorks = result.google_dorks || {};
-            const dorkLabels = {
-                site_search: '🔍 Site Index',
-                reputation: '⚠️ Reputation Check',
-                whois_lookup: '📋 WHOIS Data',
-                virustotal: '🦠 VirusTotal',
-                urlscan: '🔬 URLScan.io',
-                wayback: '📜 Wayback Machine',
-                shodan: '🌐 Shodan',
-                abuse_report: '🚨 Report Phishing'
-            };
-            
-            for (const [key, url] of Object.entries(dorks)) {
-                const link = document.createElement('a');
-                link.href = url;
-                link.target = '_blank';
-                link.className = 'intel-link';
-                link.textContent = dorkLabels[key] || key;
-                intelContainer.appendChild(link);
-            }
-            
-            // Threat indicators
-            const grid = document.getElementById('threat-grid');
-            grid.innerHTML = '';
-            
-            // SSL Card
-            if (result.ssl_forensics) {
-                const card = createThreatCard('SSL FORENSICS', [
-                    {icon: result.ssl_forensics.issuer_trust === 'COMMERCIAL_EV' ? 'ok' : 'warning', 
-                     text: 'Issuer: ' + (result.ssl_forensics.certificate?.issuer || 'Unknown')},
-                    {icon: result.ssl_forensics.certificate?.expiry_days > 30 ? 'ok' : 'warning',
-                     text: 'Expires in: ' + (result.ssl_forensics.certificate?.expiry_days || '?') + ' days'},
-                    {icon: result.ssl_forensics.issuer_trust === 'SELF-SIGNED' ? 'danger' : 'ok',
-                     text: 'Trust Level: ' + (result.ssl_forensics.issuer_trust || 'Unknown')}
-                ]);
-                grid.appendChild(card);
-            }
-            
-            // Domain Intel Card
-            if (result.domain_intel) {
-                const card = createThreatCard('DOMAIN INTELLIGENCE', [
-                    {icon: (result.domain_intel.age_days || 0) > 365 ? 'ok' : 'warning',
-                     text: 'Age: ' + (result.domain_intel.age_days || '?') + ' days'},
-                    {icon: 'ok', text: 'Registrar: ' + (result.domain_intel.registrar || 'Unknown')},
-                    {icon: result.domain_intel.privacy_protected ? 'warning' : 'ok',
-                     text: result.domain_intel.privacy_protected ? 'Privacy Protected' : 'Public WHOIS'}
-                ]);
-                grid.appendChild(card);
-            }
-            
-            // Content Analysis Card
-            if (result.content_analysis) {
-                const card = createThreatCard('CONTENT ANALYSIS', [
-                    {icon: result.content_analysis.urgency_score > 30 ? 'danger' : 'ok',
-                     text: 'Urgency Score: ' + (result.content_analysis.urgency_score || 0)},
-                    {icon: result.content_analysis.financial_score > 30 ? 'danger' : 'ok',
-                     text: 'Financial Keywords: ' + (result.content_analysis.financial_score || 0)},
-                    {icon: result.content_analysis.forms?.suspicious ? 'danger' : 'ok',
-                     text: 'Forms: ' + (result.content_analysis.forms?.count || 0) + ' detected'}
-                ]);
-                grid.appendChild(card);
-            }
-            
-            // Tech Stack Card
-            if (result.tech_stack) {
-                const card = createThreatCard('TECHNOLOGY STACK', [
-                    {icon: result.tech_stack.detected?.includes('Phishing') ? 'danger' : 'ok',
-                     text: 'Platform: ' + (result.tech_stack.detected || 'Unknown')},
-                    {icon: 'ok', text: 'Confidence: ' + (result.tech_stack.confidence || 0) + '%'}
-                ]);
-                grid.appendChild(card);
-            }
-            
-            // Threat Indicators Card
-            if (result.threat_indicators && result.threat_indicators.length > 0) {
-                const items = result.threat_indicators.slice(0, 5).map(t => ({icon: 'danger', text: t}));
-                const card = createThreatCard('⚠️ THREAT INDICATORS', items);
-                grid.appendChild(card);
-            }
-            
-            // Recommendations Card
-            if (result.recommendations && result.recommendations.length > 0) {
-                const items = result.recommendations.slice(0, 5).map(r => ({icon: r.startsWith('🚫') ? 'danger' : 'ok', text: r}));
-                const card = createThreatCard('📋 RECOMMENDATIONS', items);
-                grid.appendChild(card);
-            }
+            // Evidence row
+            const evidenceRow = document.createElement('tr');
+            evidenceRow.className = 'evidence-row';
+            evidenceRow.id = rowId;
+            evidenceRow.innerHTML = `
+                <td colspan="6">
+                    <div class="evidence-content">
+                        <div class="analysis-details">
+                            <div class="detail-card">
+                                <h4>SEMANTIC ANALYSIS</h4>
+                                <div class="detail-item">
+                                    <span class="detail-label">Title:</span>
+                                    <span class="detail-value">${result.semantic_analysis?.extracted_title || 'N/A'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Domain:</span>
+                                    <span class="detail-value">${result.semantic_analysis?.domain || 'N/A'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Registrant:</span>
+                                    <span class="detail-value">${result.semantic_analysis?.registrant || 'Unknown'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Impersonation:</span>
+                                    <span class="detail-value">${result.semantic_analysis?.impersonation_check || 'None'}</span>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <h4>PSYCHOLOGICAL ANALYSIS</h4>
+                                <div class="detail-item">
+                                    <span class="detail-label">Fear Triggers:</span>
+                                    <span class="detail-value">${result.psychological_analysis?.triggers?.fear || 0}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Greed Triggers:</span>
+                                    <span class="detail-value">${result.psychological_analysis?.triggers?.greed || 0}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Urgency Triggers:</span>
+                                    <span class="detail-value">${result.psychological_analysis?.triggers?.urgency || 0}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Verdict:</span>
+                                    <span class="detail-value">${result.psychological_analysis?.verdict || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <h4>DOMAIN CONSISTENCY</h4>
+                                <div class="detail-item">
+                                    <span class="detail-label">Created:</span>
+                                    <span class="detail-value">${result.domain_consistency?.creation_date || 'Unknown'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Age (days):</span>
+                                    <span class="detail-value">${result.domain_consistency?.age_days || 'Unknown'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Anomaly:</span>
+                                    <span class="detail-value">${result.domain_consistency?.anomaly || 'None'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(evidenceRow);
         }
         
-        function createThreatCard(title, items) {
-            const card = document.createElement('div');
-            card.className = 'threat-card';
-            card.innerHTML = '<h3>' + title + '</h3>';
+        function toggleEvidence(rowId) {
+            const row = document.getElementById(rowId);
+            row.classList.toggle('visible');
+        }
+        
+        function sortTable(colIndex) {
+            const tbody = document.getElementById('results-body');
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.evidence-row)'));
             
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'threat-item';
-                div.innerHTML = '<span class="threat-icon ' + item.icon + '">' + 
-                    (item.icon === 'danger' ? '!' : (item.icon === 'warning' ? '?' : '✓')) + 
-                    '</span><span>' + item.text + '</span>';
-                card.appendChild(div);
+            sortDirection[colIndex] = !sortDirection[colIndex];
+            const dir = sortDirection[colIndex] ? 1 : -1;
+            
+            rows.sort((a, b) => {
+                let aVal = a.cells[colIndex].textContent;
+                let bVal = b.cells[colIndex].textContent;
+                
+                if (colIndex === 1 || colIndex === 4) {
+                    aVal = parseFloat(aVal) || 0;
+                    bVal = parseFloat(bVal) || 0;
+                    return (aVal - bVal) * dir;
+                }
+                return aVal.localeCompare(bVal) * dir;
             });
             
-            return card;
+            rows.forEach(row => {
+                const evidenceRow = row.nextElementSibling;
+                tbody.appendChild(row);
+                if (evidenceRow?.classList.contains('evidence-row')) {
+                    tbody.appendChild(evidenceRow);
+                }
+            });
         }
         
-        // History
-        async function loadHistory() {
-            try {
-                const response = await fetch('/api/history');
-                const history = await response.json();
-                
-                const container = document.getElementById('history-list');
-                container.innerHTML = '';
-                
-                history.slice().reverse().forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'history-item ' + (item.verdict || 'unknown').toLowerCase();
-                    div.innerHTML = `
-                        <span class="history-domain">${item.domain || item.target}</span>
-                        <span class="history-score">${item.score}/100</span>
-                    `;
-                    div.onclick = () => {
-                        document.getElementById('target-input').value = item.target;
-                        initiateScan();
-                    };
-                    container.appendChild(div);
-                });
-            } catch (e) {
-                console.error('History load failed:', e);
+        function exportJSON() {
+            if (analysisResults.length === 0) {
+                alert('No results to export');
+                return;
             }
+            const blob = new Blob([JSON.stringify(analysisResults, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'netsentinel_analysis.json';
+            a.click();
         }
         
-        // Initial load
-        loadHistory();
+        function exportCSV() {
+            if (analysisResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            let csv = 'URL,Truth Score,Verdict,Claimed Brands,Manipulation Index,Domain Age,Anomaly\\n';
+            analysisResults.forEach(r => {
+                csv += `"${r.url}",${r.truth_score},"${r.verdict}","${r.semantic_analysis?.claimed_brands?.join(';') || ''}",${r.psychological_analysis?.manipulative_index || 0},${r.domain_consistency?.age_days || ''},${r.domain_consistency?.anomaly || ''}\\n`;
+            });
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'netsentinel_analysis.csv';
+            a.click();
+        }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+        }
+        
+        // Load history on start
+        fetch('/history')
+            .then(r => r.json())
+            .then(history => {
+                history.slice(-5).forEach(r => addResultToTable(r));
+            });
     </script>
 </body>
 </html>
@@ -891,56 +893,65 @@ DASHBOARD_HTML = '''
 
 
 @app.route('/')
-def index():
+@app.route('/dashboard')
+def dashboard():
+    """Render the Minority Report dashboard."""
     return render_template_string(DASHBOARD_HTML)
 
 
-@app.route('/api/analyze', methods=['POST'])
+@app.route('/analyze', methods=['POST'])
 def analyze():
+    """Analyze URLs and return results."""
     data = request.get_json()
-    url = data.get('url', '')
+    urls = data.get('urls', [])
     
-    if not url:
-        return jsonify({"error": "No URL provided"}), 400
+    if not urls:
+        return jsonify({'error': 'No URLs provided'}), 400
     
-    if URL_ANALYZER_AVAILABLE:
+    if len(urls) > 100:
+        urls = urls[:100]
+    
+    results = []
+    
+    if ANALYZER_AVAILABLE:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(analyze_url_async(url))
+            async def run_analysis():
+                analyzer = NetSentinelAnalyzer()
+                async for result in analyzer.analyze_urls(urls):
+                    results.append(dict(result))
+                    save_result(dict(result))
+            
+            loop.run_until_complete(run_analysis())
         finally:
             loop.close()
     else:
-        result = {
-            "target": url,
-            "score": 50,
-            "verdict": "UNKNOWN",
-            "risk_summary": "Analyzer not available",
-            "logs": [{"module": "ERROR", "message": "URL analyzer module not loaded", "level": "error"}],
-            "threat_indicators": [],
-            "recommendations": []
-        }
+        for url in urls:
+            results.append({
+                'url': url,
+                'truth_score': 0,
+                'verdict': 'ERROR',
+                'error': 'Analyzer not available',
+                'evidence_log': ['>> ERROR: Analyzer module not loaded']
+            })
     
-    save_analysis(result)
-    return jsonify(result)
+    return jsonify(results)
 
 
-@app.route('/api/history')
+@app.route('/history')
 def history():
+    """Return analysis history."""
     return jsonify(get_history())
 
 
-@app.route('/api/alerts')
-def alerts():
-    return jsonify({"alerts": read_alerts()})
-
-
 if __name__ == '__main__':
-    print(f"\n{Fore.GREEN}{'='*60}")
-    print(f"{Fore.MAGENTA}SCAM SENTINEL{Fore.GREEN} // NetRunner Interface v3.0")
+    print(f"\n{Fore.MAGENTA}{'='*60}")
+    print(f"{Fore.CYAN}NetSentinel v5.0{Fore.MAGENTA} // Minority Report Dashboard")
     print(f"{'='*60}{Style.RESET_ALL}")
-    print(f"Dashboard: http://localhost:8080")
-    print(f"Analyzer: {'ONLINE' if URL_ANALYZER_AVAILABLE else 'OFFLINE'}")
+    print(f"Philosophy: The Truth is in the Context, not the Ports.")
+    print(f"\nDashboard: {Fore.GREEN}http://localhost:5000{Style.RESET_ALL}")
+    print(f"Analyzer: {Fore.GREEN if ANALYZER_AVAILABLE else Fore.RED}{'ONLINE' if ANALYZER_AVAILABLE else 'OFFLINE'}{Style.RESET_ALL}")
     print(f"\nPress Ctrl+C to terminate\n")
     
     app.run(host='0.0.0.0', port=8080, debug=False, threaded=True)

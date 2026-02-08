@@ -123,5 +123,1097 @@
     },
     "timestamp": "2026-02-08T17:41:01.087650+00:00",
     "analysis_duration_ms": 1632
+  },
+  {
+    "target": "https://fullmovies4u.xyz/",
+    "domain": "fullmovies4u.xyz",
+    "score": 57,
+    "verdict": "SUSPICIOUS",
+    "risk_summary": "This URL has a risk score of 57/100 and is classified as SUSPICIOUS.\n\n\n\u26a0 KEY THREATS IDENTIFIED:\n\n  1. Self-signed certificate (no third-party validation)\n  2. Domain mismatch in certificate\n  3. High-risk TLD: .xyz\n  4. Brand new domain (2 days old)\n\n\n\u26a0 RECOMMENDATION: Exercise extreme caution. Verify the legitimacy of this site through official channels before interacting.",
+    "logs": [
+      {
+        "timestamp": "23:28:08.934",
+        "module": "INIT",
+        "message": "Target acquired: fullmovies4u.xyz",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:08.935",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:08.935",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:08.942",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:08.942",
+        "module": "DOMAIN",
+        "message": "\u26a0 Suspicious TLD: .xyz",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:28:09.135",
+        "module": "SSL",
+        "message": "\u26a0 SELF-SIGNED CERTIFICATE DETECTED",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:28:09.136",
+        "module": "SSL",
+        "message": "\u26a0 Domain not in certificate SAN",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:28:09.395",
+        "module": "CONTENT",
+        "message": "Response: 200 | Server: cloudflare",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:09.423",
+        "module": "TECH",
+        "message": "Detected: WordPress (confidence: 90%)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:10.978",
+        "module": "DOMAIN",
+        "message": "\u26a0 DOMAIN CREATED 2 DAYS AGO - EXTREMELY SUSPICIOUS",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:28:10.978",
+        "module": "DOMAIN",
+        "message": "WHOIS privacy protection enabled",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:10.978",
+        "module": "VERDICT",
+        "message": "Risk Score: 57/100 - SUSPICIOUS",
+        "level": "warning"
+      }
+    ],
+    "tech_stack": {
+      "detected": "WordPress",
+      "confidence": 90,
+      "details": [
+        "Cloudflare",
+        "Powered by: PHP/8.3.28"
+      ]
+    },
+    "ssl_forensics": {
+      "score": 85,
+      "threats": [
+        "Self-signed certificate (no third-party validation)",
+        "Domain mismatch in certificate"
+      ],
+      "certificate": {
+        "error": "Certificate verification failed",
+        "details": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1020)"
+      },
+      "issuer_trust": "SELF-SIGNED"
+    },
+    "content_analysis": {
+      "score": 0,
+      "threats": [],
+      "tech_stack": {
+        "detected": "WordPress",
+        "confidence": 90,
+        "details": [
+          "Cloudflare",
+          "Powered by: PHP/8.3.28"
+        ]
+      },
+      "forms": {
+        "count": 3,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 75,
+      "threats": [
+        "High-risk TLD: .xyz",
+        "Brand new domain (2 days old)"
+      ],
+      "age_days": 2,
+      "registrar": "Dynadot LLC",
+      "creation_date": "2026-02-05 23:52:01+00:00",
+      "privacy_protected": true
+    },
+    "threat_indicators": [
+      "Self-signed certificate (no third-party validation)",
+      "Domain mismatch in certificate",
+      "High-risk TLD: .xyz",
+      "Brand new domain (2 days old)"
+    ],
+    "recommendations": [
+      "\u26a0 Verify site legitimacy through official channels",
+      "\u26a0 Do not enter sensitive information without verification",
+      "\u26a0 Check URL carefully for typosquatting",
+      "\u2713 Use a password manager to avoid phishing",
+      "\u26a0 Self-signed certificate - connection may not be secure"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:fullmovies4u.xyz",
+      "reputation": "https://www.google.com/search?q=\"fullmovies4u.xyz\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/fullmovies4u.xyz",
+      "virustotal": "https://www.virustotal.com/gui/domain/fullmovies4u.xyz",
+      "urlscan": "https://urlscan.io/search/#domain:fullmovies4u.xyz",
+      "wayback": "https://web.archive.org/web/*/fullmovies4u.xyz",
+      "shodan": "https://www.shodan.io/search?query=hostname:fullmovies4u.xyz",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://fullmovies4u.xyz"
+    },
+    "timestamp": "2026-02-08T17:43:10.978427+00:00",
+    "analysis_duration_ms": 2043
+  },
+  {
+    "target": "https://www.facebook.com/",
+    "domain": "www.facebook.com",
+    "score": 21,
+    "verdict": "SAFE",
+    "risk_summary": "This URL appears to be legitimate with a risk score of 21/100. No significant threats were detected during analysis.",
+    "logs": [
+      {
+        "timestamp": "23:28:57.169",
+        "module": "INIT",
+        "message": "Target acquired: www.facebook.com",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:57.169",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:57.169",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:57.171",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:57.406",
+        "module": "SSL",
+        "message": "\u26a0 SELF-SIGNED CERTIFICATE DETECTED",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:28:57.406",
+        "module": "SSL",
+        "message": "\u26a0 Domain not in certificate SAN",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:28:57.694",
+        "module": "CONTENT",
+        "message": "Response: 400 | Server: Unknown",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:57.698",
+        "module": "TECH",
+        "message": "Detected: Custom/Unknown (confidence: 30%)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:28:59.312",
+        "module": "DOMAIN",
+        "message": "Established domain (28+ years)",
+        "level": "success"
+      },
+      {
+        "timestamp": "23:28:59.312",
+        "module": "VERDICT",
+        "message": "Risk Score: 21/100 - SAFE",
+        "level": "success"
+      }
+    ],
+    "tech_stack": {
+      "detected": "Custom/Unknown",
+      "confidence": 30,
+      "details": []
+    },
+    "ssl_forensics": {
+      "score": 85,
+      "threats": [
+        "Self-signed certificate (no third-party validation)",
+        "Domain mismatch in certificate"
+      ],
+      "certificate": {
+        "error": "Certificate verification failed",
+        "details": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1020)"
+      },
+      "issuer_trust": "SELF-SIGNED"
+    },
+    "content_analysis": {
+      "score": 0,
+      "threats": [],
+      "tech_stack": {
+        "detected": "Custom/Unknown",
+        "confidence": 30,
+        "details": []
+      },
+      "forms": {
+        "count": 0,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 0,
+      "threats": [],
+      "age_days": 10543,
+      "registrar": "RegistrarSafe, LLC",
+      "creation_date": "1997-03-29 05:00:00+00:00",
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "Self-signed certificate (no third-party validation)",
+      "Domain mismatch in certificate"
+    ],
+    "recommendations": [
+      "\u2713 Site appears legitimate",
+      "\u2713 Always verify URLs before entering credentials",
+      "\u2713 Keep browser and security software updated",
+      "\u26a0 Self-signed certificate - connection may not be secure"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:facebook.com",
+      "reputation": "https://www.google.com/search?q=\"facebook.com\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/facebook.com",
+      "virustotal": "https://www.virustotal.com/gui/domain/facebook.com",
+      "urlscan": "https://urlscan.io/search/#domain:facebook.com",
+      "wayback": "https://web.archive.org/web/*/facebook.com",
+      "shodan": "https://www.shodan.io/search?query=hostname:facebook.com",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://facebook.com"
+    },
+    "timestamp": "2026-02-08T17:43:59.312242+00:00",
+    "analysis_duration_ms": 2142
+  },
+  {
+    "target": "https://github.com/jerrysm97/NetSentinel-IDS#",
+    "domain": "github.com",
+    "score": 21,
+    "verdict": "SAFE",
+    "risk_summary": "This URL appears to be legitimate with a risk score of 21/100. No significant threats were detected during analysis.",
+    "logs": [
+      {
+        "timestamp": "23:31:12.091",
+        "module": "INIT",
+        "message": "Target acquired: github.com",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:31:12.091",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:31:12.092",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:31:12.096",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:31:12.365",
+        "module": "SSL",
+        "message": "\u26a0 SELF-SIGNED CERTIFICATE DETECTED",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:31:12.365",
+        "module": "SSL",
+        "message": "\u26a0 Domain not in certificate SAN",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:31:13.342",
+        "module": "CONTENT",
+        "message": "Response: 200 | Server: github.com",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:31:13.401",
+        "module": "TECH",
+        "message": "Detected: Custom/Unknown (confidence: 30%)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:31:14.302",
+        "module": "DOMAIN",
+        "message": "Established domain (18+ years)",
+        "level": "success"
+      },
+      {
+        "timestamp": "23:31:14.302",
+        "module": "VERDICT",
+        "message": "Risk Score: 21/100 - SAFE",
+        "level": "success"
+      }
+    ],
+    "tech_stack": {
+      "detected": "Custom/Unknown",
+      "confidence": 30,
+      "details": [
+        "React",
+        "React",
+        "React",
+        "React"
+      ]
+    },
+    "ssl_forensics": {
+      "score": 85,
+      "threats": [
+        "Self-signed certificate (no third-party validation)",
+        "Domain mismatch in certificate"
+      ],
+      "certificate": {
+        "error": "Certificate verification failed",
+        "details": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1020)"
+      },
+      "issuer_trust": "SELF-SIGNED"
+    },
+    "content_analysis": {
+      "score": 0,
+      "threats": [],
+      "tech_stack": {
+        "detected": "Custom/Unknown",
+        "confidence": 30,
+        "details": [
+          "React",
+          "React",
+          "React",
+          "React"
+        ]
+      },
+      "forms": {
+        "count": 3,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 0,
+      "threats": [],
+      "age_days": 6696,
+      "registrar": "MarkMonitor, Inc.",
+      "creation_date": "2007-10-09 18:20:50+00:00",
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "Self-signed certificate (no third-party validation)",
+      "Domain mismatch in certificate"
+    ],
+    "recommendations": [
+      "\u2713 Site appears legitimate",
+      "\u2713 Always verify URLs before entering credentials",
+      "\u2713 Keep browser and security software updated",
+      "\u26a0 Self-signed certificate - connection may not be secure"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:github.com",
+      "reputation": "https://www.google.com/search?q=\"github.com\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/github.com",
+      "virustotal": "https://www.virustotal.com/gui/domain/github.com",
+      "urlscan": "https://urlscan.io/search/#domain:github.com",
+      "wayback": "https://web.archive.org/web/*/github.com",
+      "shodan": "https://www.shodan.io/search?query=hostname:github.com",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://github.com"
+    },
+    "timestamp": "2026-02-08T17:46:14.302518+00:00",
+    "analysis_duration_ms": 2210
+  },
+  {
+    "target": "https://desicinemas.tv/",
+    "domain": "desicinemas.tv",
+    "score": 36,
+    "verdict": "SAFE",
+    "risk_summary": "This URL appears to be legitimate with a risk score of 36/100. No significant threats were detected during analysis.",
+    "logs": [
+      {
+        "timestamp": "23:33:08.312",
+        "module": "INIT",
+        "message": "Target acquired: desicinemas.tv",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:08.312",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:08.312",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:08.315",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:08.318",
+        "module": "SSL",
+        "message": "No HTTPS available - HIGH RISK",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:33:08.319",
+        "module": "CONTENT",
+        "message": "Connection failed: Cannot connect to host desicinemas.tv:443 ssl:False [nodename nor servname provided, or not known]",
+        "level": "error"
+      },
+      {
+        "timestamp": "23:33:10.079",
+        "module": "DOMAIN",
+        "message": "Established domain (5+ years)",
+        "level": "success"
+      },
+      {
+        "timestamp": "23:33:10.079",
+        "module": "DOMAIN",
+        "message": "Registrar: Porkbun (commonly used for disposable domains)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:10.080",
+        "module": "VERDICT",
+        "message": "Risk Score: 36/100 - SAFE",
+        "level": "success"
+      }
+    ],
+    "tech_stack": {
+      "detected": "Unknown",
+      "confidence": 0
+    },
+    "ssl_forensics": {
+      "score": 80,
+      "threats": [
+        "No SSL/TLS encryption"
+      ],
+      "certificate": {},
+      "issuer_trust": "NONE"
+    },
+    "content_analysis": {
+      "score": 40,
+      "threats": [
+        "Unable to fetch content: Cannot connect to host desicinemas.tv:443 ssl:False [nodename nor servname provided, or not known]"
+      ],
+      "tech_stack": {
+        "detected": "Unknown",
+        "confidence": 0
+      },
+      "forms": {
+        "count": 0,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 0,
+      "threats": [],
+      "age_days": 2070,
+      "registrar": "Porkbun",
+      "creation_date": "2020-06-09 10:44:02+00:00",
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "No SSL/TLS encryption",
+      "Unable to fetch content: Cannot connect to host desicinemas.tv:443 ssl:False [nodename nor servname provided, or not known]"
+    ],
+    "recommendations": [
+      "\u2713 Site appears legitimate",
+      "\u2713 Always verify URLs before entering credentials",
+      "\u2713 Keep browser and security software updated"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:desicinemas.tv",
+      "reputation": "https://www.google.com/search?q=\"desicinemas.tv\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/desicinemas.tv",
+      "virustotal": "https://www.virustotal.com/gui/domain/desicinemas.tv",
+      "urlscan": "https://urlscan.io/search/#domain:desicinemas.tv",
+      "wayback": "https://web.archive.org/web/*/desicinemas.tv",
+      "shodan": "https://www.shodan.io/search?query=hostname:desicinemas.tv",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://desicinemas.tv"
+    },
+    "timestamp": "2026-02-08T17:48:10.080177+00:00",
+    "analysis_duration_ms": 1767
+  },
+  {
+    "target": "https://brittsimperial.com/",
+    "domain": "brittsimperial.com",
+    "score": 21,
+    "verdict": "SAFE",
+    "risk_summary": "This URL appears to be legitimate with a risk score of 21/100. No significant threats were detected during analysis.",
+    "logs": [
+      {
+        "timestamp": "23:33:38.618",
+        "module": "INIT",
+        "message": "Target acquired: brittsimperial.com",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:38.618",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:38.618",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:38.620",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:39.300",
+        "module": "SSL",
+        "message": "\u26a0 SELF-SIGNED CERTIFICATE DETECTED",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:33:39.300",
+        "module": "SSL",
+        "message": "\u26a0 Domain not in certificate SAN",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:33:40.377",
+        "module": "CONTENT",
+        "message": "Response: 200 | Server: LiteSpeed",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:40.449",
+        "module": "TECH",
+        "message": "Detected: WordPress (confidence: 90%)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:33:40.860",
+        "module": "DOMAIN",
+        "message": "Established domain (4+ years)",
+        "level": "success"
+      },
+      {
+        "timestamp": "23:33:40.860",
+        "module": "VERDICT",
+        "message": "Risk Score: 21/100 - SAFE",
+        "level": "success"
+      }
+    ],
+    "tech_stack": {
+      "detected": "WordPress",
+      "confidence": 90,
+      "details": [
+        "Powered by: PHP/7.4.33"
+      ]
+    },
+    "ssl_forensics": {
+      "score": 85,
+      "threats": [
+        "Self-signed certificate (no third-party validation)",
+        "Domain mismatch in certificate"
+      ],
+      "certificate": {
+        "error": "Certificate verification failed",
+        "details": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1020)"
+      },
+      "issuer_trust": "SELF-SIGNED"
+    },
+    "content_analysis": {
+      "score": 0,
+      "threats": [],
+      "tech_stack": {
+        "detected": "WordPress",
+        "confidence": 90,
+        "details": [
+          "Powered by: PHP/7.4.33"
+        ]
+      },
+      "forms": {
+        "count": 0,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 0,
+      "threats": [],
+      "age_days": 1650,
+      "registrar": "GoDaddy.com, LLC",
+      "creation_date": "2021-08-03 09:16:28+00:00",
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "Self-signed certificate (no third-party validation)",
+      "Domain mismatch in certificate"
+    ],
+    "recommendations": [
+      "\u2713 Site appears legitimate",
+      "\u2713 Always verify URLs before entering credentials",
+      "\u2713 Keep browser and security software updated",
+      "\u26a0 Self-signed certificate - connection may not be secure"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:brittsimperial.com",
+      "reputation": "https://www.google.com/search?q=\"brittsimperial.com\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/brittsimperial.com",
+      "virustotal": "https://www.virustotal.com/gui/domain/brittsimperial.com",
+      "urlscan": "https://urlscan.io/search/#domain:brittsimperial.com",
+      "wayback": "https://web.archive.org/web/*/brittsimperial.com",
+      "shodan": "https://www.shodan.io/search?query=hostname:brittsimperial.com",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://brittsimperial.com"
+    },
+    "timestamp": "2026-02-08T17:48:40.860913+00:00",
+    "analysis_duration_ms": 2242
+  },
+  {
+    "target": "https://brittsimperial.com/",
+    "domain": "brittsimperial.com",
+    "score": 21,
+    "verdict": "SAFE",
+    "risk_summary": "This URL appears to be legitimate with a risk score of 21/100. No significant threats were detected during analysis.",
+    "logs": [
+      {
+        "timestamp": "23:37:33.864",
+        "module": "INIT",
+        "message": "Target acquired: brittsimperial.com",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:37:33.864",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:37:33.865",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:37:33.869",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:37:34.625",
+        "module": "SSL",
+        "message": "\u26a0 SELF-SIGNED CERTIFICATE DETECTED",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:37:34.625",
+        "module": "SSL",
+        "message": "\u26a0 Domain not in certificate SAN",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:37:35.474",
+        "module": "CONTENT",
+        "message": "Response: 200 | Server: LiteSpeed",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:37:35.513",
+        "module": "TECH",
+        "message": "Detected: WordPress (confidence: 90%)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:37:36.190",
+        "module": "DOMAIN",
+        "message": "Established domain (4+ years)",
+        "level": "success"
+      },
+      {
+        "timestamp": "23:37:36.190",
+        "module": "VERDICT",
+        "message": "Risk Score: 21/100 - SAFE",
+        "level": "success"
+      }
+    ],
+    "tech_stack": {
+      "detected": "WordPress",
+      "confidence": 90,
+      "details": [
+        "Powered by: PHP/7.4.33"
+      ]
+    },
+    "ssl_forensics": {
+      "score": 85,
+      "threats": [
+        "Self-signed certificate (no third-party validation)",
+        "Domain mismatch in certificate"
+      ],
+      "certificate": {
+        "error": "Certificate verification failed",
+        "details": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1020)"
+      },
+      "issuer_trust": "SELF-SIGNED"
+    },
+    "content_analysis": {
+      "score": 0,
+      "threats": [],
+      "tech_stack": {
+        "detected": "WordPress",
+        "confidence": 90,
+        "details": [
+          "Powered by: PHP/7.4.33"
+        ]
+      },
+      "forms": {
+        "count": 0,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 0,
+      "threats": [],
+      "age_days": 1650,
+      "registrar": "GoDaddy.com, LLC",
+      "creation_date": "2021-08-03 09:16:28+00:00",
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "Self-signed certificate (no third-party validation)",
+      "Domain mismatch in certificate"
+    ],
+    "recommendations": [
+      "\u2713 Site appears legitimate",
+      "\u2713 Always verify URLs before entering credentials",
+      "\u2713 Keep browser and security software updated",
+      "\u26a0 Self-signed certificate - connection may not be secure"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:brittsimperial.com",
+      "reputation": "https://www.google.com/search?q=\"brittsimperial.com\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/brittsimperial.com",
+      "virustotal": "https://www.virustotal.com/gui/domain/brittsimperial.com",
+      "urlscan": "https://urlscan.io/search/#domain:brittsimperial.com",
+      "wayback": "https://web.archive.org/web/*/brittsimperial.com",
+      "shodan": "https://www.shodan.io/search?query=hostname:brittsimperial.com",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://brittsimperial.com"
+    },
+    "timestamp": "2026-02-08T17:52:36.190884+00:00",
+    "analysis_duration_ms": 2326
+  },
+  {
+    "target": "https://brittsimperial.com/",
+    "domain": "brittsimperial.com",
+    "score": 21,
+    "verdict": "SAFE",
+    "risk_summary": "This URL appears to be legitimate with a risk score of 21/100. No significant threats were detected during analysis.",
+    "logs": [
+      {
+        "timestamp": "23:41:47.225",
+        "module": "INIT",
+        "message": "Target acquired: brittsimperial.com",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:41:47.225",
+        "module": "SSL",
+        "message": "Initiating TLS handshake...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:41:47.226",
+        "module": "CONTENT",
+        "message": "Fetching page content...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:41:47.230",
+        "module": "DOMAIN",
+        "message": "Querying domain intelligence...",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:41:47.885",
+        "module": "SSL",
+        "message": "\u26a0 SELF-SIGNED CERTIFICATE DETECTED",
+        "level": "critical"
+      },
+      {
+        "timestamp": "23:41:47.885",
+        "module": "SSL",
+        "message": "\u26a0 Domain not in certificate SAN",
+        "level": "warning"
+      },
+      {
+        "timestamp": "23:41:48.737",
+        "module": "CONTENT",
+        "message": "Response: 200 | Server: LiteSpeed",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:41:48.802",
+        "module": "TECH",
+        "message": "Detected: WordPress (confidence: 90%)",
+        "level": "info"
+      },
+      {
+        "timestamp": "23:41:49.694",
+        "module": "DOMAIN",
+        "message": "Established domain (4+ years)",
+        "level": "success"
+      },
+      {
+        "timestamp": "23:41:49.694",
+        "module": "VERDICT",
+        "message": "Risk Score: 21/100 - SAFE",
+        "level": "success"
+      }
+    ],
+    "tech_stack": {
+      "detected": "WordPress",
+      "confidence": 90,
+      "details": [
+        "Powered by: PHP/7.4.33"
+      ]
+    },
+    "ssl_forensics": {
+      "score": 85,
+      "threats": [
+        "Self-signed certificate (no third-party validation)",
+        "Domain mismatch in certificate"
+      ],
+      "certificate": {
+        "error": "Certificate verification failed",
+        "details": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1020)"
+      },
+      "issuer_trust": "SELF-SIGNED"
+    },
+    "content_analysis": {
+      "score": 0,
+      "threats": [],
+      "tech_stack": {
+        "detected": "WordPress",
+        "confidence": 90,
+        "details": [
+          "Powered by: PHP/7.4.33"
+        ]
+      },
+      "forms": {
+        "count": 0,
+        "login_forms": 0,
+        "suspicious": false
+      },
+      "urgency_score": 0,
+      "financial_score": 0
+    },
+    "domain_intel": {
+      "score": 0,
+      "threats": [],
+      "age_days": 1650,
+      "registrar": "GoDaddy.com, LLC",
+      "creation_date": "2021-08-03 09:16:28+00:00",
+      "privacy_protected": false
+    },
+    "threat_indicators": [
+      "Self-signed certificate (no third-party validation)",
+      "Domain mismatch in certificate"
+    ],
+    "recommendations": [
+      "\u2713 Site appears legitimate",
+      "\u2713 Always verify URLs before entering credentials",
+      "\u2713 Keep browser and security software updated",
+      "\u26a0 Self-signed certificate - connection may not be secure"
+    ],
+    "google_dorks": {
+      "site_search": "https://www.google.com/search?q=site:brittsimperial.com",
+      "reputation": "https://www.google.com/search?q=\"brittsimperial.com\"+scam+OR+fraud+OR+fake",
+      "whois_lookup": "https://who.is/whois/brittsimperial.com",
+      "virustotal": "https://www.virustotal.com/gui/domain/brittsimperial.com",
+      "urlscan": "https://urlscan.io/search/#domain:brittsimperial.com",
+      "wayback": "https://web.archive.org/web/*/brittsimperial.com",
+      "shodan": "https://www.shodan.io/search?query=hostname:brittsimperial.com",
+      "abuse_report": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https://brittsimperial.com"
+    },
+    "timestamp": "2026-02-08T17:56:49.694506+00:00",
+    "analysis_duration_ms": 2469
+  },
+  {
+    "url": "https://www.paypal.com",
+    "truth_score": 60.0,
+    "verdict": "SUSPICIOUS",
+    "semantic_analysis": {
+      "extracted_title": "A Simple and Safer Way to Pay and Get Paid  | PayPal NP",
+      "h1_tags": [
+        "Your money works better."
+      ],
+      "copyright_texts": [
+        "\u00a9 1999-2026"
+      ],
+      "claimed_brands": [
+        "Ebay",
+        "Paypal"
+      ],
+      "domain": "www.paypal.com",
+      "registrant": "PayPal Inc.",
+      "impersonation_check": "\u26a0\ufe0f IDENTITY MISMATCH: Claims 'Ebay' but domain 'www.paypal.com' owned by 'PayPal Inc.', not Ebay Inc."
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 268,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": "1999-07-15",
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": 9705
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: www.paypal.com",
+      ">> FETCH: HTTP 200 (40130 bytes)",
+      ">> PARSE TITLE: 'A Simple and Safer Way to Pay and Get Paid  | PayPal NP'",
+      ">> FOUND 1 H1 TAGS: ['Your money works better.']",
+      ">> BRAND DETECTION: ['Ebay', 'Paypal']",
+      ">> WHOIS REGISTRANT: 'PayPal Inc.'",
+      ">> \ud83d\udea8 LIE DETECTED: \u26a0\ufe0f IDENTITY MISMATCH: Claims 'Ebay' but domain 'www.paypal.com' owned by 'PayPal Inc.', not Ebay Inc.",
+      ">> MANIPULATION INDEX: 0.0/100 (LOW MANIPULATION - Appears genuine)",
+      ">> DOMAIN AGE: 9705 days (created 1999)",
+      ">> VERDICT: SUSPICIOUS (Truth Score: 60.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:02:19.755980+00:00",
+    "analysis_duration_ms": 6662
+  },
+  {
+    "url": "https://example.com",
+    "truth_score": 100,
+    "verdict": "TRUTHFUL",
+    "semantic_analysis": {
+      "extracted_title": "Example Domain",
+      "h1_tags": [
+        "Example Domain"
+      ],
+      "copyright_texts": [],
+      "claimed_brands": [],
+      "domain": "example.com",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected"
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 19,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": "1995-08-14",
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": 11136
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: example.com",
+      ">> FETCH: HTTP 200 (513 bytes)",
+      ">> PARSE TITLE: 'Example Domain'",
+      ">> FOUND 1 H1 TAGS: ['Example Domain']",
+      ">> MANIPULATION INDEX: 0.0/100 (LOW MANIPULATION - Appears genuine)",
+      ">> DOMAIN AGE: 11136 days (created 1995)",
+      ">> VERDICT: TRUTHFUL (Truth Score: 100.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:02:22.999817+00:00",
+    "analysis_duration_ms": 2659
+  },
+  {
+    "url": "https://britishcollege.ae/",
+    "truth_score": 100,
+    "verdict": "TRUTHFUL",
+    "semantic_analysis": {
+      "extracted_title": "Coming Soon",
+      "h1_tags": [],
+      "copyright_texts": [],
+      "claimed_brands": [],
+      "domain": "britishcollege.ae",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected"
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 273,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": null,
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": null
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: britishcollege.ae",
+      ">> FETCH: HTTP 200 (87031 bytes)",
+      ">> PARSE TITLE: 'Coming Soon'",
+      ">> MANIPULATION INDEX: 0.0/100 (LOW MANIPULATION - Appears genuine)",
+      ">> VERDICT: TRUTHFUL (Truth Score: 100.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:02:42.365216+00:00",
+    "analysis_duration_ms": 4161
   }
 ]
