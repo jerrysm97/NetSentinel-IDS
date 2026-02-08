@@ -171,18 +171,52 @@ class OmniscientAnalyzer:
         'Hetzner': ['hetzner']
     })
     
-    # Piracy/Warez detection patterns
+    # Piracy/Warez detection patterns - FINE-TUNED for FilmyFly/Filmy4wap
     piracy_keywords: List[str] = field(default_factory=lambda: [
-        r'\b1080p\b', r'\b720p\b', r'\b4k\b', r'\b2160p\b', r'\bhdtv\b',
-        r'\bcamrip\b', r'\bdvdrip\b', r'\bbrrip\b', r'\bbluray\b', r'\bwebrip\b',
-        r'\bhdcam\b', r'\byify\b', r'\byts\b', r'\brarbg\b', r'\btorrent\b',
-        r'\bmagnet\b', r'\bstream\s*free\b', r'\bwatch\s*free\b', r'\bfree\s*download\b',
+        # Resolution/Quality terms (HIGH WEIGHT)
+        r'\b1080p\b', r'\b720p\b', r'\b4k\b', r'\b2160p\b', r'\b480p\b', r'\b360p\b',
+        r'\bhdtv\b', r'\bhdcam\b', r'\bhdts\b', r'\bhdrip\b', r'\bweb-?dl\b',
+        r'\bcamrip\b', r'\bdvdrip\b', r'\bbrrip\b', r'\bblu-?ray\b', r'\bwebrip\b',
+        r'\bpre-?dvd\b', r'\bscr\b', r'\bts\b', r'\btc\b', r'\bdvdscr\b',
+        # Audio terms
+        r'\bdual\s*audio\b', r'\bhindi\s*dubbed\b', r'\bsouth\s*hindi\b', r'\besub\b',
+        r'\bhindi\s*audio\b', r'\btamil\s*dubbed\b', r'\btelugu\s*dubbed\b',
+        r'\bun-?cut\b', r'\bhevc\b', r'\bx264\b', r'\bx265\b', r'\baac\b',
+        # Download terms (HIGH WEIGHT)  
+        r'\bdownload\b', r'\bfree\s*download\b', r'\bdirect\s*download\b',
+        r'\bsingle\s*click\b', r'\bno\s*registration\b', r'\binstant\s*download\b',
+        r'\bfast\s*download\b', r'\bhigh\s*speed\b', r'\bgdrive\b', r'\bmega\.nz\b',
+        # Piracy networks (CRITICAL - brand matching)
+        r'\bfilmy4wap\b', r'\bfilmyfly\b', r'\bfilmyfiy\b', r'\bfilmyzilla\b',
+        r'\b9xmovies\b', r'\bmp4moviez\b', r'\bkhatrimaza\b', r'\bbolly4u\b',
+        r'\bjalshamovie\b', r'\bmovierulz\b', r'\btamilrockers\b', r'\bworldfree4u\b',
+        r'\bmoviesda\b', r'\bisaimini\b', r'\bskymovies\b', r'\bhdhub4u\b',
+        r'\bextramovies\b', r'\bssrmovies\b', r'\bmkvcinemas\b', r'\bvegamovies\b',
+        # Torrent terms
+        r'\btorrent\b', r'\bmagnet\b', r'\byify\b', r'\byts\b', r'\brarbg\b',
+        r'\b1337x\b', r'\bpiratebay\b', r'\blimetorrents\b', r'\bkickass\b',
+        # Software piracy
         r'\bcracked?\b', r'\bkeygen\b', r'\bserial\s*key\b', r'\bactivator\b',
         r'\bpatch(ed)?\b', r'\bfull\s*version\b', r'\bunlocked\b', r'\bmod\s*apk\b',
-        r'\b(movie|film)s?\s*(download|watch)\b', r'\bsubtitles?\b', r'\bsrt\b',
+        r'\bnulled?\b', r'\bleaked?\b', r'\bwarez\b', r'\bcrackwatch\b',
+        # Content patterns
+        r'\b(movie|film)s?\s*(download|watch)\b', r'\bwatch\s*(online|free)\b',
+        r'\bstream\s*free\b', r'\bfree\s*movies?\b', r'\blatest\s*movies?\b',
+        r'\bnew\s*movies?\s*\d{4}\b', r'\bbollywood\s*movies?\b', r'\bhollywood\s*hindi\b',
+        r'\bsouth\s*(indian|movies?)\b', r'\bweb\s*series\b', r'\bnetflix\s*(series|shows?)\b',
         r'\bepisodes?\s*\d+\b', r'\bseason\s*\d+\b', r'\bs\d+e\d+\b',
-        r'\bpirate(d|bay)?\b', r'\bwarez\b', r'\bnulledd?\b', r'\bleaked?\b'
+        # File hosting
+        r'\bmediafire\b', r'\bzippyshare\b', r'\buptobox\b', r'\bopenload\b',
+        r'\bstreamtape\b', r'\bdoodstream\b', r'\bmixdrop\b', r'\bvoe\.sx\b'
     ])
+    
+    # Piracy brand names for exact matching
+    piracy_brands: Set[str] = field(default_factory=lambda: {
+        'filmy4wap', 'filmyfly', 'filmyfiy', 'filmyzilla', '9xmovies', 'mp4moviez',
+        'khatrimaza', 'bolly4u', 'jalshamovie', 'movierulz', 'tamilrockers',
+        'worldfree4u', 'moviesda', 'isaimini', 'skymovies', 'hdhub4u', 'extramovies',
+        'ssrmovies', 'mkvcinemas', 'vegamovies', 'filmywap', 'hdmovieshub', 'filmyhit'
+    })
     
     # Magnet link pattern
     magnet_pattern: str = r'magnet:\?xt=urn:[a-z0-9]+:[a-zA-Z0-9]+'

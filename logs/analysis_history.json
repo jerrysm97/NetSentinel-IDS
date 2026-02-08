@@ -2072,5 +2072,1252 @@
     ],
     "timestamp": "2026-02-08T18:20:06.891237+00:00",
     "analysis_duration_ms": 2835
+  },
+  {
+    "url": "https://www.daraz.com.np/#?",
+    "domain": "www.daraz.com.np",
+    "risk_score": 13,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [],
+    "network_intel": {
+      "ip_address": "47.246.174.88",
+      "geolocation": {
+        "country": "Singapore",
+        "country_code": "SG",
+        "region": "03",
+        "city": "Singapore"
+      },
+      "isp": "Alibaba (US) Technology Co., Ltd.",
+      "asn": "AS45102 Alibaba (US) Technology Co., Ltd.",
+      "org": "Alibaba.com LLC",
+      "open_ports": [
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": null,
+      "domain_created": null,
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 30,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "download buttons (6)"
+      ],
+      "phishing_indicators": [
+        "brand mention: Apple"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Online Shopping in Nepal: Best Deals, Prices & Discounts - Daraz.com.np",
+      "h1_tags": [
+        "Experience Hassle-Free Online Shopping in Nepal with Daraz"
+      ],
+      "claimed_brands": [],
+      "domain": "www.daraz.com.np",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.5,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 1
+      },
+      "body_word_count": 1239,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: www.daraz.com.np",
+      ">> Target URL: https://www.daraz.com.np/#?",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [NETWORK] IP Resolved: 47.246.174.88",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [NETWORK] Location: Singapore, Singapore",
+      ">> [NETWORK] ISP: Alibaba (US) Technology Co., Ltd.",
+      ">> [NETWORK] ASN: AS45102 Alibaba (US) Technology Co., Ltd.",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (411151 bytes)",
+      ">> [PORTSCAN] Open ports: [80, 443]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['download buttons (6)']",
+      ">> [PIRACY] Score: 30/100",
+      ">> [PHISHING] Indicators: ['brand mention: Apple']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 13/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['NONE']"
+    ],
+    "timestamp": "2026-02-08T18:37:46.897095+00:00",
+    "analysis_duration_ms": 3491
+  },
+  {
+    "url": "https://filmyfiy.click/",
+    "domain": "filmyfiy.click",
+    "risk_score": 45,
+    "category": "PIRACY/WAREZ",
+    "verdict": "SUSPICIOUS",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "104.21.75.119",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 8,
+      "domain_created": "2026-01-31",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 0,
+      "piracy_score": 100,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "720p",
+        "bluray",
+        "movie"
+      ],
+      "phishing_indicators": [],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "filmyfiy.click 2025 South Bollywood & Hollywood Hindi Animation  Web Series at Filmy4wap - FilmyFly",
+      "h1_tags": [
+        "FilmyFiy.Com Movies And Web Series Downloads",
+        "How To Download Movies On FilmyFly",
+        "\u092e\u0942\u0935\u0940 \u0921\u093e\u0909\u0928\u0932\u094b\u0921 \u0915\u0948\u0938\u0947 \u0915\u0930\u0947\u0902!"
+      ],
+      "claimed_brands": [],
+      "domain": "filmyfiy.click",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1174,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: filmyfiy.click",
+      ">> Target URL: https://filmyfiy.click/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 104.21.75.119",
+      ">> [FETCH] HTTP 200 (66332 bytes)",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [TEMPORAL] Domain Created: 2026-01-31",
+      ">> [TEMPORAL] Domain Age: 8 days",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['720p', 'bluray', 'movie']",
+      ">> [PIRACY] Score: 100/100",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: SUSPICIOUS | Risk Score: 45/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:38:29.674091+00:00",
+    "analysis_duration_ms": 4812
+  },
+  {
+    "url": "https://britishcollege.ae/",
+    "domain": "britishcollege.ae",
+    "risk_score": 15,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [
+      "BULLETPROOF"
+    ],
+    "network_intel": {
+      "ip_address": "93.127.173.200",
+      "geolocation": {
+        "country": "India",
+        "country_code": "IN",
+        "region": "MH",
+        "city": "Mumbai"
+      },
+      "isp": "HOSTINGER IN",
+      "asn": "AS47583 Hostinger International Limited",
+      "org": "",
+      "open_ports": [
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": true,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": null,
+      "domain_created": null,
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "LEGITIMATE",
+      "phishing_score": 0,
+      "piracy_score": 0,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [],
+      "phishing_indicators": [],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Coming Soon",
+      "h1_tags": [],
+      "claimed_brands": [],
+      "domain": "britishcollege.ae",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 273,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: britishcollege.ae",
+      ">> Target URL: https://britishcollege.ae/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 93.127.173.200",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [NETWORK] Location: Mumbai, India",
+      ">> [NETWORK] ISP: HOSTINGER IN",
+      ">> [NETWORK] ASN: AS47583 Hostinger International Limited",
+      ">> [NETWORK] \u26a0\ufe0f BULLETPROOF HOSTING DETECTED",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (87031 bytes)",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [CONTENT] Category: LEGITIMATE",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83d\udee1\ufe0f THREAT BADGE: [BULLETPROOF] Abuse-Resistant Hosting",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 15/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['BULLETPROOF']"
+    ],
+    "timestamp": "2026-02-08T18:39:13.619990+00:00",
+    "analysis_duration_ms": 2644
+  },
+  {
+    "url": "https://paiu.fr/",
+    "domain": "paiu.fr",
+    "risk_score": 4,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [],
+    "network_intel": {
+      "ip_address": "50.6.192.252",
+      "geolocation": {
+        "country": "United States",
+        "country_code": "US",
+        "region": "VA",
+        "city": "Ashburn"
+      },
+      "isp": "Network Solutions, LLC",
+      "asn": "AS19871 Network Solutions, LLC",
+      "org": "Oracle Corporation",
+      "open_ports": [
+        21,
+        22,
+        53,
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": false,
+      "reverse_dns": "server-619949.ukcollegeonline.com"
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 857,
+      "domain_created": "2023-10-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "LEGITIMATE",
+      "phishing_score": 15,
+      "piracy_score": 0,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [],
+      "phishing_indicators": [
+        "brand mention: Instagram"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Paris American International University \u2013 French Degree, Online Undergraduate and Postgraduate Courses",
+      "h1_tags": [
+        "Global Education for Global Career",
+        "Why Choose Us?",
+        "Contact Us"
+      ],
+      "claimed_brands": [],
+      "domain": "paiu.fr",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 921,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: paiu.fr",
+      ">> Target URL: https://paiu.fr/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 50.6.192.252",
+      ">> [NETWORK] Location: Ashburn, United States",
+      ">> [NETWORK] ISP: Network Solutions, LLC",
+      ">> [NETWORK] ASN: AS19871 Network Solutions, LLC",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [PORTSCAN] Open ports: [21, 22, 53, 80, 443]",
+      ">> [NETWORK] Reverse DNS: server-619949.ukcollegeonline.com",
+      ">> [TEMPORAL] Domain Created: 2023-10-05",
+      ">> [TEMPORAL] Domain Age: 857 days",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [FETCH] HTTP 200 (248668 bytes)",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PHISHING] Indicators: ['brand mention: Instagram']",
+      ">> [CONTENT] Category: LEGITIMATE",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 4/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['NONE']"
+    ],
+    "timestamp": "2026-02-08T18:39:52.694378+00:00",
+    "analysis_duration_ms": 6466
+  },
+  {
+    "url": "https://britishcollege.ae/",
+    "domain": "britishcollege.ae",
+    "risk_score": 15,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [
+      "BULLETPROOF"
+    ],
+    "network_intel": {
+      "ip_address": "147.79.69.106",
+      "geolocation": {
+        "country": "India",
+        "country_code": "IN",
+        "region": "MH",
+        "city": "Mumbai"
+      },
+      "isp": "Hostinger International Limited",
+      "asn": "AS47583 Hostinger International Limited",
+      "org": "Hostinger",
+      "open_ports": [
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": true,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": null,
+      "domain_created": null,
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "LEGITIMATE",
+      "phishing_score": 0,
+      "piracy_score": 0,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [],
+      "phishing_indicators": [],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Coming Soon",
+      "h1_tags": [],
+      "claimed_brands": [],
+      "domain": "britishcollege.ae",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 273,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: britishcollege.ae",
+      ">> Target URL: https://britishcollege.ae/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 147.79.69.106",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [NETWORK] Location: Mumbai, India",
+      ">> [NETWORK] ISP: Hostinger International Limited",
+      ">> [NETWORK] ASN: AS47583 Hostinger International Limited",
+      ">> [NETWORK] \u26a0\ufe0f BULLETPROOF HOSTING DETECTED",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (87031 bytes)",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [CONTENT] Category: LEGITIMATE",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83d\udee1\ufe0f THREAT BADGE: [BULLETPROOF] Abuse-Resistant Hosting",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 15/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['BULLETPROOF']"
+    ],
+    "timestamp": "2026-02-08T18:40:16.825828+00:00",
+    "analysis_duration_ms": 2630
+  },
+  {
+    "url": "https://fullmovies4u.xyz/",
+    "domain": "fullmovies4u.xyz",
+    "risk_score": 36,
+    "category": "PIRACY/WAREZ",
+    "verdict": "LOW_RISK",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "172.67.194.244",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 3,
+      "domain_created": "2026-02-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 55,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "1080p",
+        "720p",
+        "4k",
+        "free download",
+        "movie",
+        "subtitles"
+      ],
+      "phishing_indicators": [
+        "brand mention: Facebook"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Hdhub4u South Movie Bollywood Hollywood Movie Web Series HQ Dub Movie Filmy4web all quality movie",
+      "h1_tags": [
+        "Hdhub4u Website is a Number 1 Website In india 2025 ?"
+      ],
+      "claimed_brands": [],
+      "domain": "fullmovies4u.xyz",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1463,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: fullmovies4u.xyz",
+      ">> Target URL: https://fullmovies4u.xyz/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 172.67.194.244",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (93994 bytes)",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [TEMPORAL] Domain Created: 2026-02-05",
+      ">> [TEMPORAL] Domain Age: 3 days",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['1080p', '720p', '4k', 'free download', 'movie']",
+      ">> [PIRACY] Score: 55/100",
+      ">> [PHISHING] Indicators: ['brand mention: Facebook']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: LOW_RISK | Risk Score: 36/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:40:52.402432+00:00",
+    "analysis_duration_ms": 3475
+  },
+  {
+    "url": "https://fullmovies4u.xyz/",
+    "domain": "fullmovies4u.xyz",
+    "risk_score": 36,
+    "category": "PIRACY/WAREZ",
+    "verdict": "LOW_RISK",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "104.21.82.41",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 3,
+      "domain_created": "2026-02-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 55,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "1080p",
+        "720p",
+        "4k",
+        "free download",
+        "movie",
+        "subtitles"
+      ],
+      "phishing_indicators": [
+        "brand mention: Facebook"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Hdhub4u South Movie Bollywood Hollywood Movie Web Series HQ Dub Movie Filmy4web all quality movie",
+      "h1_tags": [
+        "Hdhub4u Website is a Number 1 Website In india 2025 ?"
+      ],
+      "claimed_brands": [],
+      "domain": "fullmovies4u.xyz",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1463,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: fullmovies4u.xyz",
+      ">> Target URL: https://fullmovies4u.xyz/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 104.21.82.41",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [FETCH] HTTP 200 (93994 bytes)",
+      ">> [TEMPORAL] Domain Created: 2026-02-05",
+      ">> [TEMPORAL] Domain Age: 3 days",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['1080p', '720p', '4k', 'free download', 'movie']",
+      ">> [PIRACY] Score: 55/100",
+      ">> [PHISHING] Indicators: ['brand mention: Facebook']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: LOW_RISK | Risk Score: 36/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:41:43.767845+00:00",
+    "analysis_duration_ms": 3171
+  },
+  {
+    "url": "https://filmyfiy.click/",
+    "domain": "filmyfiy.click",
+    "risk_score": 45,
+    "category": "PIRACY/WAREZ",
+    "verdict": "SUSPICIOUS",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "104.21.75.119",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 8,
+      "domain_created": "2026-01-31",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 0,
+      "piracy_score": 100,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "720p",
+        "480p",
+        "bluray",
+        "dual audio",
+        "hindi dubbed",
+        "south hindi",
+        "esub",
+        "uncut",
+        "hevc",
+        "download",
+        "single click",
+        "no registration",
+        "filmy4wap",
+        "filmyfly",
+        "filmyfiy",
+        "filmyzilla",
+        "movie",
+        "free movie",
+        "latest movies",
+        "bollywood movie",
+        "hollywood hindi",
+        "web series"
+      ],
+      "phishing_indicators": [],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "filmyfiy.click 2025 South Bollywood & Hollywood Hindi Animation  Web Series at Filmy4wap - FilmyFly",
+      "h1_tags": [
+        "FilmyFiy.Com Movies And Web Series Downloads",
+        "How To Download Movies On FilmyFly",
+        "\u092e\u0942\u0935\u0940 \u0921\u093e\u0909\u0928\u0932\u094b\u0921 \u0915\u0948\u0938\u0947 \u0915\u0930\u0947\u0902!"
+      ],
+      "claimed_brands": [],
+      "domain": "filmyfiy.click",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1174,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: filmyfiy.click",
+      ">> Target URL: https://filmyfiy.click/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 104.21.75.119",
+      ">> [FETCH] HTTP 200 (66332 bytes)",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [TEMPORAL] Domain Created: 2026-01-31",
+      ">> [TEMPORAL] Domain Age: 8 days",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['720p', '480p', 'bluray', 'dual audio', 'hindi dubbed']",
+      ">> [PIRACY] Score: 100/100",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: SUSPICIOUS | Risk Score: 45/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:53:02.382613+00:00",
+    "analysis_duration_ms": 3900
+  },
+  {
+    "url": "https://fullmovies4u.xyz/",
+    "domain": "fullmovies4u.xyz",
+    "risk_score": 49,
+    "category": "PIRACY/WAREZ",
+    "verdict": "SUSPICIOUS",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "104.21.82.41",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 3,
+      "domain_created": "2026-02-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 100,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "1080p",
+        "720p",
+        "4k",
+        "480p",
+        "dual audio",
+        "hindi dubbed",
+        "south hindi",
+        "esub",
+        "uncut",
+        "hevc",
+        "download",
+        "free download",
+        "filmy4wap",
+        "filmyfly",
+        "filmyfiy",
+        "filmyzilla",
+        "9xmovies",
+        "mp4moviez",
+        "bolly4u",
+        "skymovies",
+        "hdhub4u",
+        "movie",
+        "free movie",
+        "latest movies",
+        "bollywood movie",
+        "web series"
+      ],
+      "phishing_indicators": [
+        "brand mention: Facebook"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Hdhub4u South Movie Bollywood Hollywood Movie Web Series HQ Dub Movie Filmy4web all quality movie",
+      "h1_tags": [
+        "Hdhub4u Website is a Number 1 Website In india 2025 ?"
+      ],
+      "claimed_brands": [],
+      "domain": "fullmovies4u.xyz",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1463,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: fullmovies4u.xyz",
+      ">> Target URL: https://fullmovies4u.xyz/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 104.21.82.41",
+      ">> [FETCH] HTTP 200 (93994 bytes)",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [TEMPORAL] Domain Created: 2026-02-05",
+      ">> [TEMPORAL] Domain Age: 3 days",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['1080p', '720p', '4k', '480p', 'dual audio']",
+      ">> [PIRACY] Score: 100/100",
+      ">> [PHISHING] Indicators: ['brand mention: Facebook']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: SUSPICIOUS | Risk Score: 49/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:53:41.379028+00:00",
+    "analysis_duration_ms": 3413
+  },
+  {
+    "url": "https://fullmovies4u.xyz/",
+    "domain": "fullmovies4u.xyz",
+    "risk_score": 49,
+    "category": "PIRACY/WAREZ",
+    "verdict": "SUSPICIOUS",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "172.67.194.244",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 3,
+      "domain_created": "2026-02-05",
+      "temporal_anomaly": null,
+      "history_fabrication": false,
+      "content_shift_detected": false,
+      "content_shift_detail": null,
+      "old_category": null,
+      "new_category": null
+    },
+    "ct_log_analysis": {
+      "total_certs": 0,
+      "first_cert_date": null,
+      "recent_certs": [],
+      "suspicious_subdomains": [],
+      "rapid_issuance": false,
+      "phishing_subdomain_pattern": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 100,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "1080p",
+        "720p",
+        "4k",
+        "480p",
+        "dual audio",
+        "hindi dubbed",
+        "south hindi",
+        "esub",
+        "uncut",
+        "hevc",
+        "download",
+        "free download",
+        "filmy4wap",
+        "filmyfly",
+        "filmyfiy",
+        "filmyzilla",
+        "9xmovies",
+        "mp4moviez",
+        "bolly4u",
+        "skymovies",
+        "hdhub4u",
+        "movie",
+        "free movie",
+        "latest movies",
+        "bollywood movie",
+        "web series"
+      ],
+      "phishing_indicators": [
+        "brand mention: Facebook"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Hdhub4u South Movie Bollywood Hollywood Movie Web Series HQ Dub Movie Filmy4web all quality movie",
+      "h1_tags": [
+        "Hdhub4u Website is a Number 1 Website In india 2025 ?"
+      ],
+      "claimed_brands": [],
+      "domain": "fullmovies4u.xyz",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1463,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: fullmovies4u.xyz",
+      ">> Target URL: https://fullmovies4u.xyz/",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [MODULE E] CT LOG ANALYSIS: Querying crt.sh...",
+      ">> [NETWORK] IP Resolved: 172.67.194.244",
+      ">> [FETCH] HTTP 200 (93994 bytes)",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [CT-LOG] Query Error: Cannot connect to host crt.sh:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [TEMPORAL] Domain Created: 2026-02-05",
+      ">> [TEMPORAL] Domain Age: 3 days",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['1080p', '720p', '4k', '480p', 'dual audio']",
+      ">> [PIRACY] Score: 100/100",
+      ">> [PHISHING] Indicators: ['brand mention: Facebook']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: SUSPICIOUS | Risk Score: 49/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:53:47.313376+00:00",
+    "analysis_duration_ms": 2769
   }
 ]

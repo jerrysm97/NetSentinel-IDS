@@ -1,0 +1,43 @@
+{
+    "manifest_version": 3,
+    "name": "NetSentinel Guardian",
+    "version": "1.0.0",
+    "description": "Real-time URL threat detection and protection",
+    "permissions": [
+        "activeTab",
+        "storage",
+        "notifications",
+        "webNavigation"
+    ],
+    "host_permissions": [
+        "http://localhost:8080/*",
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/shield16.png",
+            "48": "icons/shield48.png",
+            "128": "icons/shield128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/shield16.png",
+        "48": "icons/shield48.png",
+        "128": "icons/shield128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_end"
+        }
+    ]
+}

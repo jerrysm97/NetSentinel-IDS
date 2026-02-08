@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>NetSentinel Guardian</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            width: 350px;
+            background: linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%);
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0d0015 100%);
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header h1 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00ff41;
+        }
+        
+        .header .version {
+            font-size: 10px;
+            color: #666;
+            margin-left: auto;
+        }
+        
+        .status-bar {
+            padding: 10px 15px;
+            background: rgba(0, 255, 65, 0.1);
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .status-bar.danger { background: rgba(255, 0, 51, 0.1); border-color: rgba(255, 0, 51, 0.2); }
+        .status-bar.warning { background: rgba(255, 153, 0, 0.1); border-color: rgba(255, 153, 0, 0.2); }
+        
+        .status {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status.safe { color: #00ff41; }
+        .status.danger { color: #ff0033; }
+        .status.warning { color: #ff9900; }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toggle {
+            width: 40px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle.active { background: #00ff41; }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+        
+        .toggle.active::after { left: 22px; }
+        
+        .current-page {
+            padding: 15px;
+            border-bottom: 1px solid #222;
+        }
+        
+        .current-page h3 {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .page-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .score-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            border: 3px solid;
+        }
+        
+        .score-circle.safe { border-color: #00ff41; color: #00ff41; }
+        .score-circle.warning { border-color: #ff9900; color: #ff9900; }
+        .score-circle.danger { border-color: #ff0033; color: #ff0033; }
+        
+        .page-details {
+            flex: 1;
+        }
+        
+        .page-url {
+            font-size: 12px;
+            color: #fff;
+            word-break: break-all;
+            margin-bottom: 5px;
+        }
+        
+        .page-verdict {
+            font-size: 11px;
+            color: #999;
+        }
+        
+        .badges { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+        
+        .badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .badge-piracy { background: #ff6600; color: #fff; }
+        .badge-phishing { background: #ff0033; color: #fff; }
+        .badge-malware { background: #9900ff; color: #fff; }
+        .badge-safe { background: #00ff41; color: #000; }
+        
+        .actions {
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #00ff41;
+            color: #000;
+        }
+        
+        .btn-primary:hover { background: #00cc33; }
+        
+        .btn-secondary {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+        }
+        
+        .btn-secondary:hover { border-color: #666; }
+        
+        .history {
+            padding: 15px;
+        }
+        
+        .history h3 {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        
+        .history-score {
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 25px;
+        }
+        
+        .history-url {
+            font-size: 11px;
+            color: #999;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-top: 2px solid #00ff41;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span>🛡️</span>
+        <h1>NetSentinel Guardian</h1>
+        <span class="version">v1.0</span>
+    </div>
+    
+    <div class="status-bar" id="statusBar">
+        <span class="status safe" id="statusText">● Monitoring Active</span>
+        <div class="toggle-container">
+            <span style="font-size: 10px; color: #666;">Shield</span>
+            <div class="toggle active" id="toggleBtn"></div>
+        </div>
+    </div>
+    
+    <div class="current-page" id="currentPage">
+        <h3>Current Page</h3>
+        <div class="loading" id="loadingState">
+            <div class="spinner"></div>
+            <span>Scanning...</span>
+        </div>
+        <div class="page-info" id="pageInfo" style="display: none;">
+            <div class="score-circle safe" id="scoreCircle">--</div>
+            <div class="page-details">
+                <div class="page-url" id="pageUrl">-</div>
+                <div class="page-verdict" id="pageVerdict">-</div>
+                <div class="badges" id="pageBadges"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="actions">
+        <button class="btn btn-primary" id="scanBtn">🔍 Scan Now</button>
+        <button class="btn btn-secondary" id="dashboardBtn">📊 Dashboard</button>
+    </div>
+    
+    <div class="history">
+        <h3>Recent Scans</h3>
+        <div id="historyList">
+            <div class="loading"><span>Loading...</span></div>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
