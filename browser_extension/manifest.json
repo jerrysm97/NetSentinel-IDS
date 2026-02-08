@@ -19,15 +19,15 @@
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
-            "16": "icons/shield16.png",
-            "48": "icons/shield48.png",
-            "128": "icons/shield128.png"
+            "16": "icons/shield.svg",
+            "48": "icons/shield.svg",
+            "128": "icons/shield.svg"
         }
     },
     "icons": {
-        "16": "icons/shield16.png",
-        "48": "icons/shield48.png",
-        "128": "icons/shield128.png"
+        "16": "icons/shield.svg",
+        "48": "icons/shield.svg",
+        "128": "icons/shield.svg"
     },
     "content_scripts": [
         {
