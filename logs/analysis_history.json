@@ -1215,5 +1215,446 @@
     ],
     "timestamp": "2026-02-08T18:02:42.365216+00:00",
     "analysis_duration_ms": 4161
+  },
+  {
+    "url": "https://paiu.fr/",
+    "truth_score": 60.0,
+    "verdict": "SUSPICIOUS",
+    "semantic_analysis": {
+      "extracted_title": "Paris American International University \u2013 French Degree, Online Undergraduate and Postgraduate Courses",
+      "h1_tags": [
+        "Global Education for Global Career",
+        "Why Choose Us?",
+        "Contact Us"
+      ],
+      "copyright_texts": [
+        "\u00a9 2026"
+      ],
+      "claimed_brands": [
+        "Linkedin",
+        "Whatsapp",
+        "Instagram",
+        "Facebook"
+      ],
+      "domain": "paiu.fr",
+      "registrant": null,
+      "impersonation_check": "\u26a0\ufe0f IDENTITY MISMATCH: Claims 'Linkedin' but domain 'paiu.fr' owned by 'Unknown', not Linkedin Inc."
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 921,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": "2023-10-05",
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": 857
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: paiu.fr",
+      ">> FETCH: HTTP 200 (248668 bytes)",
+      ">> PARSE TITLE: 'Paris American International University \u2013 French Degree, Onl...' ",
+      ">> FOUND 3 H1 TAGS: ['Global Education for Global Career', 'Why Choose Us?', 'Contact Us']",
+      ">> BRAND DETECTION: ['Linkedin', 'Whatsapp', 'Instagram', 'Facebook']",
+      ">> WHOIS REGISTRANT: 'REDACTED/UNKNOWN'",
+      ">> \ud83d\udea8 LIE DETECTED: \u26a0\ufe0f IDENTITY MISMATCH: Claims 'Linkedin' but domain 'paiu.fr' owned by 'Unknown', not Linkedin Inc.",
+      ">> MANIPULATION INDEX: 0.0/100 (LOW MANIPULATION - Appears genuine)",
+      ">> DOMAIN AGE: 857 days (created 2023)",
+      ">> VERDICT: SUSPICIOUS (Truth Score: 60.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:03:36.356046+00:00",
+    "analysis_duration_ms": 12070
+  },
+  {
+    "url": "https://desicinemas.tv/",
+    "truth_score": 0,
+    "verdict": "ERROR",
+    "semantic_analysis": {
+      "extracted_title": "",
+      "h1_tags": [],
+      "copyright_texts": [],
+      "claimed_brands": [],
+      "domain": "desicinemas.tv",
+      "registrant": null,
+      "impersonation_check": "Error: Failed to fetch content: Max retries exceeded"
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 0,
+      "verdict": "Unable to analyze"
+    },
+    "domain_consistency": {
+      "creation_date": null,
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": null
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: desicinemas.tv",
+      ">> RETRY 1/3: ClientConnectorDNSError",
+      ">> RETRY 2/3: ClientConnectorDNSError",
+      ">> RETRY 3/3: ClientConnectorDNSError",
+      ">> ERROR: Failed to fetch content: Max retries exceeded"
+    ],
+    "timestamp": "2026-02-08T18:04:43.474243+00:00",
+    "analysis_duration_ms": 2015
+  },
+  {
+    "url": "https://filmyfiy.click/",
+    "truth_score": 90.0,
+    "verdict": "TRUTHFUL",
+    "semantic_analysis": {
+      "extracted_title": "filmyfiy.click 2025 South Bollywood & Hollywood Hindi Animation  Web Series at Filmy4wap - FilmyFly",
+      "h1_tags": [
+        "FilmyFiy.Com Movies And Web Series Downloads",
+        "How To Download Movies On FilmyFly",
+        "\u092e\u0942\u0935\u0940 \u0921\u093e\u0909\u0928\u0932\u094b\u0921 \u0915\u0948\u0938\u0947 \u0915\u0930\u0947\u0902!"
+      ],
+      "copyright_texts": [],
+      "claimed_brands": [],
+      "domain": "filmyfiy.click",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected"
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1174,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": "2026-01-31",
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": 8
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: filmyfiy.click",
+      ">> FETCH: HTTP 200 (66332 bytes)",
+      ">> PARSE TITLE: 'filmyfiy.click 2025 South Bollywood & Hollywood Hindi Animat...' ",
+      ">> FOUND 3 H1 TAGS: ['FilmyFiy.Com Movies And Web Series Downloads', 'How To Download Movies On FilmyFly', '\u092e\u0942\u0935\u0940 \u0921\u093e\u0909\u0928\u0932\u094b\u0921 \u0915\u0948\u0938\u0947 \u0915\u0930\u0947\u0902!']",
+      ">> MANIPULATION INDEX: 0.0/100 (LOW MANIPULATION - Appears genuine)",
+      ">> DOMAIN AGE: 8 days (created 2026)",
+      ">> VERDICT: TRUTHFUL (Truth Score: 90.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:05:16.230988+00:00",
+    "analysis_duration_ms": 4058
+  },
+  {
+    "url": "https://www.daraz.com.np/#?",
+    "truth_score": 60.0,
+    "verdict": "SUSPICIOUS",
+    "semantic_analysis": {
+      "extracted_title": "Online Shopping in Nepal: Best Deals, Prices & Discounts - Daraz.com.np",
+      "h1_tags": [
+        "Experience Hassle-Free Online Shopping in Nepal with Daraz"
+      ],
+      "copyright_texts": [],
+      "claimed_brands": [
+        "Apple"
+      ],
+      "domain": "www.daraz.com.np",
+      "registrant": null,
+      "impersonation_check": "\u26a0\ufe0f IDENTITY MISMATCH: Claims 'Apple' but domain 'www.daraz.com.np' owned by 'Unknown', not Apple Inc."
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.6,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 1
+      },
+      "body_word_count": 1177,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": null,
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": null
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: www.daraz.com.np",
+      ">> FETCH: HTTP 200 (408019 bytes)",
+      ">> PARSE TITLE: 'Online Shopping in Nepal: Best Deals, Prices & Discounts - D...' ",
+      ">> FOUND 1 H1 TAGS: ['Experience Hassle-Free Online Shopping in Nepal with Daraz']",
+      ">> BRAND DETECTION: ['Apple']",
+      ">> WHOIS REGISTRANT: 'REDACTED/UNKNOWN'",
+      ">> \ud83d\udea8 LIE DETECTED: \u26a0\ufe0f IDENTITY MISMATCH: Claims 'Apple' but domain 'www.daraz.com.np' owned by 'Unknown', not Apple Inc.",
+      ">> URGENCY TRIGGERS: 1 patterns detected",
+      ">> MANIPULATION INDEX: 0.6/100 (LOW MANIPULATION - Appears genuine)",
+      ">> VERDICT: SUSPICIOUS (Truth Score: 60.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:08:46.366473+00:00",
+    "analysis_duration_ms": 2265
+  },
+  {
+    "url": "https://www.daraz.com.np/#?",
+    "truth_score": 60.0,
+    "verdict": "SUSPICIOUS",
+    "semantic_analysis": {
+      "extracted_title": "Online Shopping in Nepal: Best Deals, Prices & Discounts - Daraz.com.np",
+      "h1_tags": [
+        "Experience Hassle-Free Online Shopping in Nepal with Daraz"
+      ],
+      "copyright_texts": [],
+      "claimed_brands": [
+        "Apple"
+      ],
+      "domain": "www.daraz.com.np",
+      "registrant": null,
+      "impersonation_check": "\u26a0\ufe0f IDENTITY MISMATCH: Claims 'Apple' but domain 'www.daraz.com.np' owned by 'Unknown', not Apple Inc."
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.6,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 1
+      },
+      "body_word_count": 1174,
+      "verdict": "LOW MANIPULATION - Appears genuine"
+    },
+    "domain_consistency": {
+      "creation_date": null,
+      "copyright_years": [],
+      "anomaly": null,
+      "age_days": null
+    },
+    "evidence_log": [
+      ">> INITIATING COGNITIVE SCAN: www.daraz.com.np",
+      ">> FETCH: HTTP 200 (407969 bytes)",
+      ">> PARSE TITLE: 'Online Shopping in Nepal: Best Deals, Prices & Discounts - D...' ",
+      ">> FOUND 1 H1 TAGS: ['Experience Hassle-Free Online Shopping in Nepal with Daraz']",
+      ">> BRAND DETECTION: ['Apple']",
+      ">> WHOIS REGISTRANT: 'REDACTED/UNKNOWN'",
+      ">> \ud83d\udea8 LIE DETECTED: \u26a0\ufe0f IDENTITY MISMATCH: Claims 'Apple' but domain 'www.daraz.com.np' owned by 'Unknown', not Apple Inc.",
+      ">> URGENCY TRIGGERS: 1 patterns detected",
+      ">> MANIPULATION INDEX: 0.6/100 (LOW MANIPULATION - Appears genuine)",
+      ">> VERDICT: SUSPICIOUS (Truth Score: 60.0/100)"
+    ],
+    "timestamp": "2026-02-08T18:09:00.422277+00:00",
+    "analysis_duration_ms": 1959
+  },
+  {
+    "url": "https://filmyfiy.click",
+    "domain": "filmyfiy.click",
+    "risk_score": 45,
+    "category": "PIRACY/WAREZ",
+    "verdict": "SUSPICIOUS",
+    "threat_badges": [
+      "WAREZ"
+    ],
+    "network_intel": {
+      "ip_address": "172.67.175.147",
+      "geolocation": {
+        "country": "Canada",
+        "country_code": "CA",
+        "region": "ON",
+        "city": "Toronto"
+      },
+      "isp": "Cloudflare, Inc.",
+      "asn": "AS13335 Cloudflare, Inc.",
+      "org": "Cloudflare, Inc.",
+      "open_ports": [
+        80,
+        443,
+        8080
+      ],
+      "cloud_provider": "Cloudflare",
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": 8,
+      "domain_created": "2026-01-31",
+      "temporal_anomaly": null,
+      "history_fabrication": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 0,
+      "piracy_score": 100,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "720p",
+        "bluray",
+        "movie"
+      ],
+      "phishing_indicators": [],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "filmyfiy.click 2025 South Bollywood & Hollywood Hindi Animation  Web Series at Filmy4wap - FilmyFly",
+      "h1_tags": [
+        "FilmyFiy.Com Movies And Web Series Downloads",
+        "How To Download Movies On FilmyFly",
+        "\u092e\u0942\u0935\u0940 \u0921\u093e\u0909\u0928\u0932\u094b\u0921 \u0915\u0948\u0938\u0947 \u0915\u0930\u0947\u0902!"
+      ],
+      "claimed_brands": [],
+      "domain": "filmyfiy.click",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.0,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 0
+      },
+      "body_word_count": 1174,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: filmyfiy.click",
+      ">> Target URL: https://filmyfiy.click",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [NETWORK] IP Resolved: 172.67.175.147",
+      ">> [FETCH] HTTP 200 (66332 bytes)",
+      ">> [NETWORK] Location: Toronto, Canada",
+      ">> [NETWORK] ISP: Cloudflare, Inc.",
+      ">> [NETWORK] ASN: AS13335 Cloudflare, Inc.",
+      ">> [NETWORK] Cloud Provider: Cloudflare",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [TEMPORAL] Domain Created: 2026-01-31",
+      ">> [TEMPORAL] Domain Age: 8 days",
+      ">> [PORTSCAN] Open ports: [80, 443, 8080]",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['720p', 'bluray', 'movie']",
+      ">> [PIRACY] Score: 100/100",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> \ud83c\udff4\u200d\u2620\ufe0f THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected",
+      ">> ==================================================",
+      ">> VERDICT: SUSPICIOUS | Risk Score: 45/100",
+      ">> Category: PIRACY/WAREZ",
+      ">> Threat Badges: ['WAREZ']"
+    ],
+    "timestamp": "2026-02-08T18:17:04.498376+00:00",
+    "analysis_duration_ms": 3167
+  },
+  {
+    "url": "https://www.daraz.com.np/#?",
+    "domain": "www.daraz.com.np",
+    "risk_score": 13,
+    "category": "LEGITIMATE",
+    "verdict": "SAFE",
+    "threat_badges": [],
+    "network_intel": {
+      "ip_address": "47.246.165.107",
+      "geolocation": {
+        "country": "Singapore",
+        "country_code": "SG",
+        "region": "03",
+        "city": "Singapore"
+      },
+      "isp": "Alibaba (US) Technology Co., Ltd.",
+      "asn": "AS45102 Alibaba (US) Technology Co., Ltd.",
+      "org": "Alibaba.com LLC",
+      "open_ports": [
+        80,
+        443
+      ],
+      "cloud_provider": null,
+      "is_bulletproof_host": false,
+      "reverse_dns": null
+    },
+    "temporal_analysis": {
+      "wayback_first_seen": null,
+      "wayback_last_seen": null,
+      "wayback_snapshot_count": 0,
+      "wayback_snapshots": [],
+      "domain_age_days": null,
+      "domain_created": null,
+      "temporal_anomaly": null,
+      "history_fabrication": false
+    },
+    "content_classification": {
+      "category": "PIRACY",
+      "phishing_score": 15,
+      "piracy_score": 30,
+      "malware_score": 0,
+      "ad_fraud_score": 0,
+      "piracy_indicators": [
+        "download buttons (6)"
+      ],
+      "phishing_indicators": [
+        "brand mention: Sony"
+      ],
+      "suspicious_scripts": [],
+      "shady_ad_networks": []
+    },
+    "cognitive_analysis": {
+      "extracted_title": "Online Shopping in Nepal: Best Deals, Prices & Discounts - Daraz.com.np",
+      "h1_tags": [
+        "Experience Hassle-Free Online Shopping in Nepal with Daraz"
+      ],
+      "claimed_brands": [],
+      "domain": "www.daraz.com.np",
+      "registrant": null,
+      "impersonation_check": "No impersonation detected",
+      "identity_mismatch": false
+    },
+    "psychological_analysis": {
+      "manipulative_index": 0.5,
+      "triggers": {
+        "fear": 0,
+        "greed": 0,
+        "urgency": 1
+      },
+      "body_word_count": 1247,
+      "verdict": "LOW MANIPULATION"
+    },
+    "evidence_log": [
+      ">> OMNISCIENT SCAN INITIATED: www.daraz.com.np",
+      ">> Target URL: https://www.daraz.com.np/#?",
+      ">> [MODULE A] NETWORK RECON: Initiating...",
+      ">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...",
+      ">> [NETWORK] IP Resolved: 47.246.165.107",
+      ">> [NETWORK] Location: Singapore, Singapore",
+      ">> [NETWORK] ISP: Alibaba (US) Technology Co., Ltd.",
+      ">> [NETWORK] ASN: AS45102 Alibaba (US) Technology Co., Ltd.",
+      ">> [PORTSCAN] Scanning ports: [21, 22, 53, 80, 443, 8080, 3389]",
+      ">> [WAYBACK] API Error: Cannot connect to host web.archive.org:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1020)')]",
+      ">> [FETCH] HTTP 200 (411570 bytes)",
+      ">> [PORTSCAN] Open ports: [80, 443]",
+      ">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...",
+      ">> [PIRACY] Indicators: ['download buttons (6)']",
+      ">> [PIRACY] Score: 30/100",
+      ">> [PHISHING] Indicators: ['brand mention: Sony']",
+      ">> [CONTENT] Category: PIRACY",
+      ">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...",
+      ">> ==================================================",
+      ">> VERDICT: SAFE | Risk Score: 13/100",
+      ">> Category: LEGITIMATE",
+      ">> Threat Badges: ['NONE']"
+    ],
+    "timestamp": "2026-02-08T18:17:41.771759+00:00",
+    "analysis_duration_ms": 3587
   }
 ]

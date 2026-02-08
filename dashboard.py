@@ -1,13 +1,13 @@
 """
 dashboard.py
-NetSentinel v5.0 - Minority Report Dashboard
+NetSentinel v6.0 - GOD VIEW DASHBOARD
 
-Theme: Neuromancer-inspired deep purple and blue palette
+Theme: Digital God / Overwatch - Deep void style
 Features:
-- Reality Distortion Field Meter (truth gauge)
-- Real-time evidence streaming via SSE
-- Sortable results table with expandable evidence logs
-- JSON/CSV export functionality
+- Temporal Timeline: Wayback Machine snapshots visualization
+- Infrastructure Map: IP, Flag, Host, Ports
+- Threat Vector: Badges for [WAREZ], [PHISHING], [MALWARE], [AD-FRAUD]
+- Live Terminal: Streaming thought process
 """
 
 from __future__ import annotations
@@ -18,9 +18,7 @@ import json
 import asyncio
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Generator
-import queue
-import threading
+from typing import List, Dict, Any
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -28,7 +26,7 @@ from flask import Flask, render_template_string, jsonify, request, Response
 from colorama import Fore, Style
 
 try:
-    from url_analyzer import NetSentinelAnalyzer, analyze_url_async, AnalysisResult
+    from url_analyzer import OmniscientAnalyzer, OmniscientResult
     ANALYZER_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Analyzer import failed: {e}", file=sys.stderr)
@@ -36,7 +34,6 @@ except ImportError as e:
 
 app = Flask(__name__)
 
-# Storage for analysis history
 HISTORY_FILE = "logs/analysis_history.json"
 os.makedirs("logs", exist_ok=True)
 
@@ -73,58 +70,50 @@ DASHBOARD_HTML = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetSentinel v5.0 // Minority Report</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <title>NetSentinel v6.0 // GOD VIEW</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --purple-deep: #301934;
-            --purple-mid: #4a1259;
-            --blue-dark: #0f3460;
-            --blue-glow: #16c2d5;
-            --cyan-bright: #00fff7;
-            --magenta: #e100ff;
-            --red-alert: #ff0044;
-            --green-truth: #00ff88;
-            --yellow-warn: #ffcc00;
-            --bg-void: #0a0a12;
-            --text-main: #e8e8f0;
+            --void-black: #000000;
+            --void-deep: #050510;
+            --void-mid: #0a0a1a;
+            --god-gold: #ffd700;
+            --god-orange: #ff6a00;
+            --cyber-blue: #00d4ff;
+            --cyber-purple: #9d00ff;
+            --matrix-green: #00ff41;
+            --blood-red: #ff0033;
+            --warning-yellow: #ffcc00;
+            --text-primary: #ffffff;
+            --text-dim: #666688;
         }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: 'JetBrains Mono', monospace;
-            background: linear-gradient(135deg, var(--bg-void) 0%, var(--purple-deep) 50%, var(--blue-dark) 100%);
-            background-attachment: fixed;
-            color: var(--text-main);
+            background: var(--void-black);
+            color: var(--text-primary);
             min-height: 100vh;
+            overflow-x: hidden;
         }
         
-        /* Scanlines overlay */
+        /* Grid background */
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
             pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0,0,0,0.1) 0px,
-                rgba(0,0,0,0.1) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            z-index: 10000;
+            z-index: 0;
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
             padding: 20px;
             position: relative;
@@ -136,89 +125,84 @@ DASHBOARD_HTML = '''
             text-align: center;
             padding: 30px;
             margin-bottom: 30px;
-            border: 1px solid var(--magenta);
-            background: rgba(48, 25, 52, 0.8);
+            border: 1px solid var(--god-gold);
+            background: linear-gradient(135deg, var(--void-deep), var(--void-mid));
             position: relative;
-            overflow: hidden;
         }
         
-        header::before {
+        header::before, header::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 200%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--magenta), var(--cyan-bright), transparent);
-            animation: headerScan 3s linear infinite;
+            width: 30px; height: 30px;
+            border: 2px solid var(--god-gold);
         }
-        
-        @keyframes headerScan {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(50%); }
-        }
+        header::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        header::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
         
         .logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-            background: linear-gradient(90deg, var(--cyan-bright), var(--magenta));
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--god-gold), var(--god-orange));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 4px;
+            letter-spacing: 8px;
+            text-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
         }
         
         .subtitle {
-            color: var(--blue-glow);
-            font-size: 0.75rem;
-            letter-spacing: 4px;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--cyber-blue);
+            font-size: 0.9rem;
+            letter-spacing: 6px;
             margin-top: 10px;
-            opacity: 0.9;
         }
         
-        .philosophy {
-            color: var(--yellow-warn);
-            font-style: italic;
-            font-size: 0.85rem;
-            margin-top: 15px;
+        .version-tag {
+            display: inline-block;
+            background: var(--god-gold);
+            color: var(--void-black);
+            padding: 3px 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-top: 10px;
         }
         
         /* Input Section */
         .input-section {
-            background: rgba(15, 52, 96, 0.6);
-            border: 1px solid var(--blue-glow);
+            background: var(--void-mid);
+            border: 1px solid var(--cyber-blue);
             padding: 25px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         
         .input-label {
-            color: var(--cyan-bright);
-            font-size: 0.8rem;
-            letter-spacing: 2px;
+            color: var(--cyber-blue);
+            font-size: 0.75rem;
+            letter-spacing: 3px;
             margin-bottom: 15px;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .url-textarea {
+        .input-label::before { content: '⌘'; color: var(--god-gold); }
+        
+        .url-input {
             width: 100%;
-            min-height: 100px;
-            padding: 15px;
-            background: var(--bg-void);
-            border: 1px solid var(--purple-mid);
-            color: var(--text-main);
+            padding: 15px 20px;
+            background: var(--void-black);
+            border: 2px solid var(--text-dim);
+            color: var(--text-primary);
             font-family: inherit;
-            font-size: 0.9rem;
-            resize: vertical;
+            font-size: 1rem;
             outline: none;
+            transition: all 0.3s;
         }
         
-        .url-textarea:focus {
-            border-color: var(--magenta);
-            box-shadow: 0 0 20px rgba(225, 0, 255, 0.2);
-        }
-        
-        .url-textarea::placeholder {
-            color: rgba(255,255,255,0.3);
+        .url-input:focus {
+            border-color: var(--god-gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
         
         .btn-group {
@@ -228,27 +212,29 @@ DASHBOARD_HTML = '''
         }
         
         .btn {
-            padding: 12px 25px;
+            padding: 15px 30px;
             font-family: 'Orbitron', sans-serif;
             font-size: 0.9rem;
-            letter-spacing: 1px;
+            font-weight: bold;
+            letter-spacing: 2px;
             border: none;
             cursor: pointer;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
         
-        .btn-analyze {
-            background: linear-gradient(135deg, var(--magenta), var(--purple-mid));
-            color: white;
-            border: 1px solid var(--magenta);
+        .btn-scan {
+            background: linear-gradient(135deg, var(--god-gold), var(--god-orange));
+            color: var(--void-black);
         }
         
-        .btn-analyze:hover {
-            box-shadow: 0 0 30px rgba(225, 0, 255, 0.5);
+        .btn-scan:hover {
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.5);
             transform: translateY(-2px);
         }
         
-        .btn-analyze:disabled {
+        .btn-scan:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
@@ -256,323 +242,505 @@ DASHBOARD_HTML = '''
         
         .btn-export {
             background: transparent;
-            color: var(--cyan-bright);
-            border: 1px solid var(--cyan-bright);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
         }
         
-        .btn-export:hover {
-            background: rgba(22, 194, 213, 0.2);
+        .btn-export:hover { background: rgba(0, 212, 255, 0.1); }
+        
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
         }
         
-        /* Reality Distortion Field Meter */
-        .meter-section {
-            display: none;
-            margin-bottom: 30px;
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
         
-        .meter-section.active {
-            display: block;
-        }
-        
-        .meter-container {
-            display: flex;
-            justify-content: center;
-            padding: 40px;
-            background: rgba(10, 10, 18, 0.9);
-            border: 1px solid var(--purple-mid);
-        }
-        
-        .meter-wrapper {
-            text-align: center;
-        }
-        
-        .meter-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            color: var(--cyan-bright);
-            margin-bottom: 20px;
-            letter-spacing: 2px;
-        }
-        
-        .gauge-container {
+        .panel {
+            background: var(--void-mid);
+            border: 1px solid var(--text-dim);
             position: relative;
-            width: 250px;
-            height: 150px;
-            margin: 0 auto;
         }
         
-        .gauge-bg {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .gauge-value {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-        }
-        
-        .gauge-label {
-            margin-top: 20px;
-            font-size: 1rem;
-            padding: 10px 20px;
-            border-radius: 4px;
-        }
-        
-        .gauge-label.truthful { background: rgba(0, 255, 136, 0.2); color: var(--green-truth); border: 1px solid var(--green-truth); }
-        .gauge-label.suspicious { background: rgba(255, 204, 0, 0.2); color: var(--yellow-warn); border: 1px solid var(--yellow-warn); }
-        .gauge-label.deceptive { background: rgba(255, 100, 0, 0.2); color: #ff6600; border: 1px solid #ff6600; }
-        .gauge-label.malicious { background: rgba(255, 0, 68, 0.2); color: var(--red-alert); border: 1px solid var(--red-alert); }
-        
-        /* Evidence Terminal */
-        .evidence-section {
-            margin-bottom: 30px;
-        }
-        
-        .evidence-header {
+        .panel-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            background: var(--purple-deep);
-            border: 1px solid var(--purple-mid);
-            border-bottom: none;
+            background: var(--void-deep);
+            border-bottom: 1px solid var(--text-dim);
         }
         
-        .evidence-title {
+        .panel-title {
             font-family: 'Orbitron', sans-serif;
-            color: var(--cyan-bright);
+            font-size: 0.8rem;
             letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .evidence-terminal {
-            background: #000;
-            border: 1px solid var(--purple-mid);
+        .panel-title.gold { color: var(--god-gold); }
+        .panel-title.blue { color: var(--cyber-blue); }
+        .panel-title.green { color: var(--matrix-green); }
+        .panel-title.purple { color: var(--cyber-purple); }
+        
+        .panel-body {
             padding: 20px;
-            min-height: 200px;
+            min-height: 250px;
+        }
+        
+        /* Risk Meter */
+        .risk-display {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .risk-score {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+        
+        .risk-score.safe { color: var(--matrix-green); }
+        .risk-score.low { color: var(--cyber-blue); }
+        .risk-score.medium { color: var(--warning-yellow); }
+        .risk-score.high { color: var(--god-orange); }
+        .risk-score.critical { color: var(--blood-red); }
+        
+        .risk-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 10px;
+            letter-spacing: 3px;
+        }
+        
+        .verdict-badge {
+            display: inline-block;
+            padding: 10px 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-top: 20px;
+        }
+        
+        .verdict-badge.safe { background: rgba(0,255,65,0.2); color: var(--matrix-green); border: 1px solid var(--matrix-green); }
+        .verdict-badge.suspicious { background: rgba(255,204,0,0.2); color: var(--warning-yellow); border: 1px solid var(--warning-yellow); }
+        .verdict-badge.high_risk { background: rgba(255,106,0,0.2); color: var(--god-orange); border: 1px solid var(--god-orange); }
+        .verdict-badge.malicious { background: rgba(255,0,51,0.2); color: var(--blood-red); border: 1px solid var(--blood-red); }
+        
+        /* Threat Badges */
+        .threat-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .threat-badge {
+            padding: 8px 15px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border: 1px solid;
+        }
+        
+        .threat-badge.warez { background: rgba(157,0,255,0.2); color: var(--cyber-purple); border-color: var(--cyber-purple); }
+        .threat-badge.phishing { background: rgba(255,0,51,0.2); color: var(--blood-red); border-color: var(--blood-red); }
+        .threat-badge.malware { background: rgba(255,0,51,0.3); color: #ff3366; border-color: #ff3366; }
+        .threat-badge.impersonation { background: rgba(255,106,0,0.2); color: var(--god-orange); border-color: var(--god-orange); }
+        .threat-badge.ad-fraud { background: rgba(255,204,0,0.2); color: var(--warning-yellow); border-color: var(--warning-yellow); }
+        .threat-badge.bulletproof { background: rgba(128,0,128,0.2); color: #cc00cc; border-color: #cc00cc; }
+        .threat-badge.history-fake { background: rgba(255,106,0,0.2); color: var(--god-orange); border-color: var(--god-orange); }
+        
+        /* Network Intel */
+        .intel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .intel-item {
+            background: var(--void-black);
+            padding: 12px;
+            border-left: 3px solid var(--cyber-blue);
+        }
+        
+        .intel-label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .intel-value {
+            font-size: 0.9rem;
+            color: var(--cyber-blue);
+            word-break: break-all;
+        }
+        
+        .intel-value.warning { color: var(--warning-yellow); }
+        .intel-value.danger { color: var(--blood-red); }
+        
+        .ports-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .port-badge {
+            background: var(--void-deep);
+            border: 1px solid var(--matrix-green);
+            color: var(--matrix-green);
+            padding: 3px 8px;
+            font-size: 0.7rem;
+        }
+        
+        /* Temporal Timeline */
+        .timeline-container {
+            padding: 20px 0;
+        }
+        
+        .timeline-bar {
+            height: 40px;
+            background: var(--void-black);
+            border: 1px solid var(--text-dim);
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .timeline-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyber-purple), var(--cyber-blue));
+            position: absolute;
+            left: 0;
+            transition: width 0.5s;
+        }
+        
+        .timeline-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        
+        .temporal-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .temporal-stat {
+            text-align: center;
+            padding: 15px;
+            background: var(--void-black);
+            border: 1px solid var(--text-dim);
+        }
+        
+        .temporal-stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--cyber-purple);
+        }
+        
+        .temporal-stat-label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+        
+        /* Live Terminal */
+        .terminal {
+            background: #000;
+            border: 1px solid var(--matrix-green);
+            min-height: 300px;
             max-height: 400px;
             overflow-y: auto;
-            font-size: 0.85rem;
-            line-height: 1.8;
+            font-size: 0.8rem;
+            padding: 15px;
         }
         
-        .log-line {
+        .terminal-line {
+            margin: 3px 0;
+            line-height: 1.6;
             opacity: 0;
-            animation: typeIn 0.1s forwards;
+            animation: fadeIn 0.1s forwards;
         }
         
-        @keyframes typeIn {
-            to { opacity: 1; }
+        @keyframes fadeIn { to { opacity: 1; } }
+        
+        .terminal-line.info { color: var(--cyber-blue); }
+        .terminal-line.success { color: var(--matrix-green); }
+        .terminal-line.warning { color: var(--warning-yellow); }
+        .terminal-line.error { color: var(--blood-red); }
+        .terminal-line.threat { color: var(--cyber-purple); text-shadow: 0 0 10px var(--cyber-purple); }
+        .terminal-line.gold { color: var(--god-gold); }
+        
+        /* Content Analysis */
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
         }
         
-        .log-line.info { color: var(--cyan-bright); }
-        .log-line.warn { color: var(--yellow-warn); }
-        .log-line.error { color: var(--red-alert); }
-        .log-line.success { color: var(--green-truth); }
-        .log-line.lie { color: var(--magenta); text-shadow: 0 0 10px var(--magenta); }
+        .score-card {
+            background: var(--void-black);
+            padding: 15px;
+            text-align: center;
+            border: 1px solid var(--text-dim);
+        }
+        
+        .score-card-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .score-card-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+        
+        .score-card.piracy .score-card-value { color: var(--cyber-purple); }
+        .score-card.phishing .score-card-value { color: var(--blood-red); }
+        .score-card.malware .score-card-value { color: #ff3366; }
+        .score-card.ad-fraud .score-card-value { color: var(--warning-yellow); }
+        
+        .indicators-list {
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--void-black);
+            border: 1px solid var(--text-dim);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .indicator-item {
+            font-size: 0.75rem;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--void-mid);
+            color: var(--warning-yellow);
+        }
+        
+        .indicator-item::before {
+            content: '⚡';
+            margin-right: 8px;
+        }
         
         /* Results Table */
         .results-section {
-            margin-bottom: 30px;
+            margin-top: 25px;
         }
         
         .results-table {
             width: 100%;
             border-collapse: collapse;
-            background: rgba(10, 10, 18, 0.8);
+            background: var(--void-mid);
         }
         
         .results-table th {
-            background: var(--purple-deep);
+            background: var(--void-deep);
             padding: 15px;
             text-align: left;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            color: var(--cyan-bright);
+            font-size: 0.75rem;
+            color: var(--god-gold);
             letter-spacing: 1px;
-            border-bottom: 2px solid var(--magenta);
-            cursor: pointer;
-        }
-        
-        .results-table th:hover {
-            background: var(--purple-mid);
+            border-bottom: 2px solid var(--god-gold);
         }
         
         .results-table td {
             padding: 12px 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid var(--text-dim);
             font-size: 0.85rem;
         }
         
-        .results-table tr:hover {
-            background: rgba(225, 0, 255, 0.1);
-        }
-        
-        .truth-badge {
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .truth-badge.truthful { background: rgba(0, 255, 136, 0.2); color: var(--green-truth); }
-        .truth-badge.suspicious { background: rgba(255, 204, 0, 0.2); color: var(--yellow-warn); }
-        .truth-badge.deceptive { background: rgba(255, 100, 0, 0.2); color: #ff6600; }
-        .truth-badge.malicious { background: rgba(255, 0, 68, 0.2); color: var(--red-alert); }
-        .truth-badge.error { background: rgba(128, 128, 128, 0.2); color: #888; }
-        
-        .expand-btn {
-            background: transparent;
-            border: 1px solid var(--blue-glow);
-            color: var(--blue-glow);
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 0.7rem;
-        }
-        
-        .expand-btn:hover {
-            background: rgba(22, 194, 213, 0.2);
-        }
-        
-        .evidence-row {
-            display: none;
-        }
-        
-        .evidence-row.visible {
-            display: table-row;
-        }
-        
-        .evidence-row td {
-            background: #111;
-            padding: 15px 20px;
-        }
-        
-        .evidence-content {
-            font-size: 0.8rem;
-            line-height: 1.6;
-            color: var(--cyan-bright);
-        }
-        
-        /* Analysis Details */
-        .analysis-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 15px;
-        }
-        
-        .detail-card {
-            background: rgba(48, 25, 52, 0.5);
-            border: 1px solid var(--purple-mid);
-            padding: 15px;
-        }
-        
-        .detail-card h4 {
-            color: var(--magenta);
-            font-size: 0.8rem;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
-        
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 0.8rem;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .detail-label { color: rgba(255,255,255,0.6); }
-        .detail-value { color: var(--text-main); }
-        
-        /* Dark Mode Toggle */
-        .dark-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--purple-mid);
-            border: 1px solid var(--magenta);
-            color: var(--text-main);
-            padding: 10px 15px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.8rem;
-            z-index: 1000;
-        }
+        .results-table tr:hover { background: rgba(255, 215, 0, 0.05); }
         
         footer {
             text-align: center;
             padding: 30px;
-            color: rgba(232, 232, 240, 0.4);
+            color: var(--text-dim);
             font-size: 0.7rem;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-void); }
-        ::-webkit-scrollbar-thumb { background: var(--purple-mid); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--magenta); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--void-black); }
+        ::-webkit-scrollbar-thumb { background: var(--text-dim); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--god-gold); }
     </style>
 </head>
 <body>
-    <button class="dark-toggle" onclick="toggleTheme()">☀ / ☾</button>
-    
     <div class="container">
         <header>
-            <div class="logo">NETSENTINEL v5.0</div>
-            <div class="subtitle">// MINORITY REPORT // COGNITIVE TRUTH ENGINE //</div>
-            <div class="philosophy">"The Truth is in the Context, not the Ports."</div>
+            <div class="logo">NETSENTINEL</div>
+            <div class="subtitle">// GOD VIEW // THE OMNISCIENT EDITION //</div>
+            <div class="version-tag">v6.0</div>
         </header>
         
         <div class="input-section">
-            <label class="input-label">&gt; ENTER TARGET URLs (one per line)</label>
-            <textarea id="url-input" class="url-textarea" 
-                      placeholder="https://suspicious-site.example.com&#10;https://fake-paypal.xyz&#10;https://legitimate-site.com"></textarea>
+            <label class="input-label">ENTER TARGET URL FOR OMNISCIENT ANALYSIS</label>
+            <input type="text" id="url-input" class="url-input" 
+                   placeholder="https://suspicious-site.example.com">
             <div class="btn-group">
-                <button class="btn btn-analyze" id="analyze-btn" onclick="analyzeUrls()">
-                    ANALYZE TRUTH
+                <button class="btn btn-scan" id="scan-btn" onclick="initiateOmniscientScan()">
+                    ⚡ OMNISCIENT SCAN
                 </button>
                 <button class="btn btn-export" onclick="exportJSON()">EXPORT JSON</button>
-                <button class="btn btn-export" onclick="exportCSV()">EXPORT CSV</button>
             </div>
         </div>
         
-        <div class="meter-section" id="meter-section">
-            <div class="meter-container">
-                <div class="meter-wrapper">
-                    <div class="meter-title">REALITY DISTORTION FIELD</div>
-                    <canvas id="gauge-canvas" width="250" height="150"></canvas>
-                    <div class="gauge-label" id="gauge-label">Analyzing...</div>
+        <div class="dashboard-grid">
+            <!-- Risk Assessment Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title gold">◉ RISK ASSESSMENT</span>
+                </div>
+                <div class="panel-body">
+                    <div class="risk-display">
+                        <div class="risk-score safe" id="risk-score">--</div>
+                        <div class="risk-label">RISK SCORE</div>
+                        <div class="verdict-badge" id="verdict-badge" style="display:none;"></div>
+                        <div class="threat-badges" id="threat-badges"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Network Intel Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title blue">◉ INFRASTRUCTURE MAP</span>
+                </div>
+                <div class="panel-body">
+                    <div class="intel-grid" id="network-intel">
+                        <div class="intel-item">
+                            <div class="intel-label">IP ADDRESS</div>
+                            <div class="intel-value" id="intel-ip">--</div>
+                        </div>
+                        <div class="intel-item">
+                            <div class="intel-label">LOCATION</div>
+                            <div class="intel-value" id="intel-location">--</div>
+                        </div>
+                        <div class="intel-item">
+                            <div class="intel-label">ISP / ORG</div>
+                            <div class="intel-value" id="intel-isp">--</div>
+                        </div>
+                        <div class="intel-item">
+                            <div class="intel-label">ASN</div>
+                            <div class="intel-value" id="intel-asn">--</div>
+                        </div>
+                        <div class="intel-item">
+                            <div class="intel-label">CLOUD PROVIDER</div>
+                            <div class="intel-value" id="intel-cloud">--</div>
+                        </div>
+                        <div class="intel-item">
+                            <div class="intel-label">OPEN PORTS</div>
+                            <div class="ports-list" id="intel-ports"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Temporal Forensics Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title purple">◉ TEMPORAL FORENSICS</span>
+                </div>
+                <div class="panel-body">
+                    <div class="timeline-container">
+                        <div class="timeline-bar">
+                            <div class="timeline-fill" id="timeline-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="timeline-markers">
+                            <span id="timeline-start">--</span>
+                            <span>WAYBACK MACHINE</span>
+                            <span id="timeline-end">--</span>
+                        </div>
+                    </div>
+                    <div class="temporal-stats">
+                        <div class="temporal-stat">
+                            <div class="temporal-stat-value" id="temporal-snapshots">--</div>
+                            <div class="temporal-stat-label">SNAPSHOTS</div>
+                        </div>
+                        <div class="temporal-stat">
+                            <div class="temporal-stat-value" id="temporal-age">--</div>
+                            <div class="temporal-stat-label">DOMAIN AGE (DAYS)</div>
+                        </div>
+                        <div class="temporal-stat">
+                            <div class="temporal-stat-value" id="temporal-anomaly">OK</div>
+                            <div class="temporal-stat-label">ANOMALY STATUS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content Classification Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title green">◉ CONTENT CLASSIFICATION</span>
+                </div>
+                <div class="panel-body">
+                    <div class="scores-grid">
+                        <div class="score-card piracy">
+                            <div class="score-card-value" id="score-piracy">0</div>
+                            <div class="score-card-label">PIRACY</div>
+                        </div>
+                        <div class="score-card phishing">
+                            <div class="score-card-value" id="score-phishing">0</div>
+                            <div class="score-card-label">PHISHING</div>
+                        </div>
+                        <div class="score-card malware">
+                            <div class="score-card-value" id="score-malware">0</div>
+                            <div class="score-card-label">MALWARE</div>
+                        </div>
+                        <div class="score-card ad-fraud">
+                            <div class="score-card-value" id="score-adfraud">0</div>
+                            <div class="score-card-label">AD-FRAUD</div>
+                        </div>
+                    </div>
+                    <div class="indicators-list" id="indicators-list">
+                        <div style="color: var(--text-dim); text-align: center;">
+                            Awaiting scan...
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="evidence-section">
-            <div class="evidence-header">
-                <span class="evidence-title">EVIDENCE STREAM</span>
-                <button class="btn btn-export" onclick="clearLogs()" style="padding: 5px 10px; font-size: 0.7rem;">CLEAR</button>
+        <!-- Live Terminal -->
+        <div class="panel" style="margin-bottom: 25px;">
+            <div class="panel-header">
+                <span class="panel-title green">◉ LIVE TERMINAL // THOUGHT PROCESS</span>
+                <button class="btn btn-export" onclick="clearTerminal()" style="padding: 5px 10px; font-size: 0.7rem;">CLEAR</button>
             </div>
-            <div class="evidence-terminal" id="evidence-terminal">
-                <div class="log-line info">&gt;&gt; COGNITIVE ENGINE READY</div>
-                <div class="log-line info">&gt;&gt; Awaiting targets for truth analysis...</div>
+            <div class="terminal" id="terminal">
+                <div class="terminal-line info">>> NETSENTINEL v6.0 OMNISCIENT ENGINE READY</div>
+                <div class="terminal-line info">>> Awaiting target for analysis...</div>
             </div>
         </div>
         
+        <!-- Results Table -->
         <div class="results-section">
             <table class="results-table">
                 <thead>
                     <tr>
-                        <th onclick="sortTable(0)">URL ↕</th>
-                        <th onclick="sortTable(1)">TRUTH SCORE ↕</th>
-                        <th onclick="sortTable(2)">VERDICT ↕</th>
-                        <th onclick="sortTable(3)">IMPERSONATION ↕</th>
-                        <th onclick="sortTable(4)">MANIP INDEX ↕</th>
-                        <th>EVIDENCE</th>
+                        <th>URL</th>
+                        <th>RISK</th>
+                        <th>CATEGORY</th>
+                        <th>VERDICT</th>
+                        <th>THREATS</th>
+                        <th>DURATION</th>
                     </tr>
                 </thead>
                 <tbody id="results-body"></tbody>
@@ -580,311 +748,224 @@ DASHBOARD_HTML = '''
         </div>
         
         <footer>
-            NETSENTINEL v5.0 // COGNITIVE TRUTH ENGINE // ETHICAL USE ONLY
+            NETSENTINEL v6.0 // THE OMNISCIENT EDITION // ETHICAL USE ONLY
         </footer>
     </div>
     
     <script>
-        let analysisResults = [];
-        let sortDirection = {};
+        let currentResult = null;
+        let analysisHistory = [];
         
-        // Gauge drawing
-        function drawGauge(score, verdict) {
-            const canvas = document.getElementById('gauge-canvas');
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-            const centerX = width / 2;
-            const centerY = height - 10;
-            const radius = height - 30;
+        async function initiateOmniscientScan() {
+            const url = document.getElementById('url-input').value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
             
-            ctx.clearRect(0, 0, width, height);
+            const btn = document.getElementById('scan-btn');
+            btn.disabled = true;
+            btn.textContent = 'SCANNING...';
             
-            // Draw arc background
-            const colors = [
-                { stop: 0, color: '#ff0044' },
-                { stop: 0.25, color: '#ff6600' },
-                { stop: 0.5, color: '#ffcc00' },
-                { stop: 0.75, color: '#88ff00' },
-                { stop: 1, color: '#00ff88' }
-            ];
+            resetPanels();
+            logToTerminal('>> INITIATING OMNISCIENT SCAN', 'gold');
+            logToTerminal(`>> Target: ${url}`, 'info');
             
-            const gradient = ctx.createLinearGradient(0, 0, width, 0);
-            colors.forEach(c => gradient.addColorStop(c.stop, c.color));
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({urls: [url]})
+                });
+                
+                const results = await response.json();
+                
+                if (results.length > 0) {
+                    currentResult = results[0];
+                    analysisHistory.push(currentResult);
+                    
+                    // Stream evidence logs
+                    for (const log of currentResult.evidence_log || []) {
+                        await logToTerminal(log);
+                        await sleep(30);
+                    }
+                    
+                    updatePanels(currentResult);
+                    addToResultsTable(currentResult);
+                }
+            } catch (e) {
+                logToTerminal(`>> ERROR: ${e.message}`, 'error');
+            }
             
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
-            ctx.lineWidth = 15;
-            ctx.strokeStyle = '#222';
-            ctx.stroke();
-            
-            // Draw filled arc based on score
-            const endAngle = Math.PI + (Math.PI * (100 - score) / 100);
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, Math.PI, endAngle, false);
-            ctx.strokeStyle = gradient;
-            ctx.lineWidth = 15;
-            ctx.stroke();
-            
-            // Draw score
-            ctx.font = 'bold 36px Orbitron';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = score >= 75 ? '#00ff88' : score >= 50 ? '#ffcc00' : score >= 25 ? '#ff6600' : '#ff0044';
-            ctx.fillText(score.toFixed(0), centerX, centerY - 20);
-            
-            ctx.font = '12px JetBrains Mono';
-            ctx.fillStyle = '#888';
-            ctx.fillText('TRUTH SCORE', centerX, centerY + 5);
-            
-            // Update label
-            const label = document.getElementById('gauge-label');
-            label.textContent = verdict;
-            label.className = 'gauge-label ' + verdict.toLowerCase().replace('_', '');
+            btn.disabled = false;
+            btn.textContent = '⚡ OMNISCIENT SCAN';
         }
         
-        // Log to terminal with typing effect
-        async function logToTerminal(message, type = 'info') {
-            const terminal = document.getElementById('evidence-terminal');
-            const line = document.createElement('div');
-            line.className = 'log-line ' + type;
+        function resetPanels() {
+            document.getElementById('risk-score').textContent = '--';
+            document.getElementById('risk-score').className = 'risk-score';
+            document.getElementById('verdict-badge').style.display = 'none';
+            document.getElementById('threat-badges').innerHTML = '';
+            document.getElementById('intel-ip').textContent = '--';
+            document.getElementById('intel-location').textContent = '--';
+            document.getElementById('intel-isp').textContent = '--';
+            document.getElementById('intel-asn').textContent = '--';
+            document.getElementById('intel-cloud').textContent = '--';
+            document.getElementById('intel-ports').innerHTML = '';
+            document.getElementById('timeline-fill').style.width = '0%';
+            document.getElementById('timeline-start').textContent = '--';
+            document.getElementById('timeline-end').textContent = '--';
+            document.getElementById('temporal-snapshots').textContent = '--';
+            document.getElementById('temporal-age').textContent = '--';
+            document.getElementById('temporal-anomaly').textContent = 'OK';
+            document.getElementById('score-piracy').textContent = '0';
+            document.getElementById('score-phishing').textContent = '0';
+            document.getElementById('score-malware').textContent = '0';
+            document.getElementById('score-adfraud').textContent = '0';
+            document.getElementById('indicators-list').innerHTML = '<div style="color: var(--text-dim); text-align: center;">Scanning...</div>';
+        }
+        
+        function updatePanels(result) {
+            // Risk Score
+            const scoreEl = document.getElementById('risk-score');
+            scoreEl.textContent = result.risk_score;
+            if (result.risk_score < 20) scoreEl.className = 'risk-score safe';
+            else if (result.risk_score < 40) scoreEl.className = 'risk-score low';
+            else if (result.risk_score < 60) scoreEl.className = 'risk-score medium';
+            else if (result.risk_score < 80) scoreEl.className = 'risk-score high';
+            else scoreEl.className = 'risk-score critical';
             
-            // Check for lie detection
-            if (message.includes('LIE DETECTED') || message.includes('IDENTITY MISMATCH')) {
-                type = 'lie';
-                line.className = 'log-line lie';
+            // Verdict
+            const verdictEl = document.getElementById('verdict-badge');
+            verdictEl.textContent = result.verdict;
+            verdictEl.className = 'verdict-badge ' + result.verdict.toLowerCase();
+            verdictEl.style.display = 'inline-block';
+            
+            // Threat Badges
+            const badgesEl = document.getElementById('threat-badges');
+            badgesEl.innerHTML = (result.threat_badges || []).map(badge => 
+                `<span class="threat-badge ${badge.toLowerCase()}">${badge}</span>`
+            ).join('');
+            
+            // Network Intel
+            const net = result.network_intel || {};
+            document.getElementById('intel-ip').textContent = net.ip_address || '--';
+            document.getElementById('intel-location').textContent = 
+                net.geolocation ? `${net.geolocation.city || ''}, ${net.geolocation.country || ''}` : '--';
+            document.getElementById('intel-isp').textContent = net.isp || net.org || '--';
+            document.getElementById('intel-asn').textContent = net.asn || '--';
+            document.getElementById('intel-cloud').textContent = net.cloud_provider || (net.is_bulletproof_host ? '⚠️ BULLETPROOF' : 'N/A');
+            
+            const portsEl = document.getElementById('intel-ports');
+            portsEl.innerHTML = (net.open_ports || []).map(port => 
+                `<span class="port-badge">${port}</span>`
+            ).join('') || '<span style="color: var(--text-dim);">None detected</span>';
+            
+            // Temporal Forensics
+            const temp = result.temporal_analysis || {};
+            document.getElementById('timeline-start').textContent = temp.wayback_first_seen || '--';
+            document.getElementById('timeline-end').textContent = temp.wayback_last_seen || '--';
+            document.getElementById('temporal-snapshots').textContent = temp.wayback_snapshot_count || 0;
+            document.getElementById('temporal-age').textContent = temp.domain_age_days || '--';
+            
+            if (temp.temporal_anomaly) {
+                document.getElementById('temporal-anomaly').textContent = '⚠️ ANOMALY';
+                document.getElementById('temporal-anomaly').style.color = 'var(--blood-red)';
+            }
+            
+            // Timeline fill
+            const fillWidth = Math.min(100, (temp.wayback_snapshot_count || 0) * 2);
+            document.getElementById('timeline-fill').style.width = fillWidth + '%';
+            
+            // Content Classification
+            const content = result.content_classification || {};
+            document.getElementById('score-piracy').textContent = content.piracy_score || 0;
+            document.getElementById('score-phishing').textContent = content.phishing_score || 0;
+            document.getElementById('score-malware').textContent = content.malware_score || 0;
+            document.getElementById('score-adfraud').textContent = content.ad_fraud_score || 0;
+            
+            // Indicators
+            const indicators = [
+                ...(content.piracy_indicators || []),
+                ...(content.phishing_indicators || []),
+                ...(content.shady_ad_networks || [])
+            ].slice(0, 10);
+            
+            const indicatorsEl = document.getElementById('indicators-list');
+            if (indicators.length > 0) {
+                indicatorsEl.innerHTML = indicators.map(ind => 
+                    `<div class="indicator-item">${ind}</div>`
+                ).join('');
+            } else {
+                indicatorsEl.innerHTML = '<div style="color: var(--matrix-green); text-align: center;">✓ No suspicious indicators detected</div>';
+            }
+        }
+        
+        function addToResultsTable(result) {
+            const tbody = document.getElementById('results-body');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td title="${result.url}">${result.url.substring(0, 50)}${result.url.length > 50 ? '...' : ''}</td>
+                <td><strong>${result.risk_score}</strong>/100</td>
+                <td>${result.category}</td>
+                <td><span class="verdict-badge ${result.verdict.toLowerCase()}" style="padding: 5px 10px; font-size: 0.7rem;">${result.verdict}</span></td>
+                <td>${(result.threat_badges || []).join(', ') || 'None'}</td>
+                <td>${result.analysis_duration_ms}ms</td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+        }
+        
+        async function logToTerminal(message, type = 'info') {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            
+            if (message.includes('LIE DETECTED') || message.includes('THREAT BADGE')) {
+                line.className += ' threat';
             } else if (message.includes('ERROR')) {
-                line.className = 'log-line error';
-            } else if (message.includes('VERDICT') && message.includes('TRUTHFUL')) {
-                line.className = 'log-line success';
-            } else if (message.includes('⚠️') || message.includes('ANOMALY')) {
-                line.className = 'log-line warn';
+                line.className += ' error';
+            } else if (message.includes('⚠️') || message.includes('ANOMALY') || message.includes('BULLETPROOF')) {
+                line.className += ' warning';
+            } else if (message.includes('VERDICT')) {
+                line.className += ' gold';
+            } else if (message.includes('✓') || message.includes('SUCCESS')) {
+                line.className += ' success';
+            } else {
+                line.className += ' ' + type;
             }
             
             line.textContent = message;
             terminal.appendChild(line);
             terminal.scrollTop = terminal.scrollHeight;
-            
-            await new Promise(r => setTimeout(r, 50));
         }
         
-        function clearLogs() {
-            document.getElementById('evidence-terminal').innerHTML = 
-                '<div class="log-line info">>> EVIDENCE LOG CLEARED</div>';
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = 
+                '<div class="terminal-line info">>> TERMINAL CLEARED</div>';
         }
         
-        async function analyzeUrls() {
-            const textarea = document.getElementById('url-input');
-            const urls = textarea.value.split('\\n').map(u => u.trim()).filter(u => u.length > 0);
-            
-            if (urls.length === 0) {
-                alert('Please enter at least one URL');
-                return;
-            }
-            
-            if (urls.length > 100) {
-                alert('Maximum 100 URLs per batch');
-                return;
-            }
-            
-            const btn = document.getElementById('analyze-btn');
-            btn.disabled = true;
-            btn.textContent = 'ANALYZING...';
-            
-            document.getElementById('meter-section').classList.add('active');
-            await logToTerminal('>> INITIATING COGNITIVE TRUTH ENGINE', 'info');
-            await logToTerminal(`>> ${urls.length} target(s) queued for analysis`, 'info');
-            
-            analysisResults = [];
-            
-            for (const url of urls) {
-                try {
-                    await logToTerminal(`>> SCANNING: ${url}`, 'info');
-                    
-                    const response = await fetch('/analyze', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({urls: [url]})
-                    });
-                    
-                    const results = await response.json();
-                    
-                    if (results.length > 0) {
-                        const result = results[0];
-                        analysisResults.push(result);
-                        
-                        // Stream evidence logs
-                        for (const log of result.evidence_log || []) {
-                            await logToTerminal(log);
-                        }
-                        
-                        drawGauge(result.truth_score, result.verdict);
-                        addResultToTable(result);
-                    }
-                } catch (e) {
-                    await logToTerminal(`>> ERROR: ${e.message}`, 'error');
-                }
-            }
-            
-            await logToTerminal('>> ANALYSIS COMPLETE', 'success');
-            btn.disabled = false;
-            btn.textContent = 'ANALYZE TRUTH';
-        }
-        
-        function addResultToTable(result) {
-            const tbody = document.getElementById('results-body');
-            const rowId = 'row-' + Date.now();
-            
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td title="${result.url}">${result.url.substring(0, 40)}${result.url.length > 40 ? '...' : ''}</td>
-                <td><strong>${result.truth_score}</strong>/100</td>
-                <td><span class="truth-badge ${result.verdict.toLowerCase().replace('_', '')}">${result.verdict}</span></td>
-                <td>${result.semantic_analysis?.claimed_brands?.join(', ') || 'None'}</td>
-                <td>${result.psychological_analysis?.manipulative_index?.toFixed(1) || 0}</td>
-                <td><button class="expand-btn" onclick="toggleEvidence('${rowId}')">DETAILS</button></td>
-            `;
-            tbody.appendChild(row);
-            
-            // Evidence row
-            const evidenceRow = document.createElement('tr');
-            evidenceRow.className = 'evidence-row';
-            evidenceRow.id = rowId;
-            evidenceRow.innerHTML = `
-                <td colspan="6">
-                    <div class="evidence-content">
-                        <div class="analysis-details">
-                            <div class="detail-card">
-                                <h4>SEMANTIC ANALYSIS</h4>
-                                <div class="detail-item">
-                                    <span class="detail-label">Title:</span>
-                                    <span class="detail-value">${result.semantic_analysis?.extracted_title || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Domain:</span>
-                                    <span class="detail-value">${result.semantic_analysis?.domain || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Registrant:</span>
-                                    <span class="detail-value">${result.semantic_analysis?.registrant || 'Unknown'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Impersonation:</span>
-                                    <span class="detail-value">${result.semantic_analysis?.impersonation_check || 'None'}</span>
-                                </div>
-                            </div>
-                            <div class="detail-card">
-                                <h4>PSYCHOLOGICAL ANALYSIS</h4>
-                                <div class="detail-item">
-                                    <span class="detail-label">Fear Triggers:</span>
-                                    <span class="detail-value">${result.psychological_analysis?.triggers?.fear || 0}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Greed Triggers:</span>
-                                    <span class="detail-value">${result.psychological_analysis?.triggers?.greed || 0}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Urgency Triggers:</span>
-                                    <span class="detail-value">${result.psychological_analysis?.triggers?.urgency || 0}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Verdict:</span>
-                                    <span class="detail-value">${result.psychological_analysis?.verdict || 'N/A'}</span>
-                                </div>
-                            </div>
-                            <div class="detail-card">
-                                <h4>DOMAIN CONSISTENCY</h4>
-                                <div class="detail-item">
-                                    <span class="detail-label">Created:</span>
-                                    <span class="detail-value">${result.domain_consistency?.creation_date || 'Unknown'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Age (days):</span>
-                                    <span class="detail-value">${result.domain_consistency?.age_days || 'Unknown'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Anomaly:</span>
-                                    <span class="detail-value">${result.domain_consistency?.anomaly || 'None'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(evidenceRow);
-        }
-        
-        function toggleEvidence(rowId) {
-            const row = document.getElementById(rowId);
-            row.classList.toggle('visible');
-        }
-        
-        function sortTable(colIndex) {
-            const tbody = document.getElementById('results-body');
-            const rows = Array.from(tbody.querySelectorAll('tr:not(.evidence-row)'));
-            
-            sortDirection[colIndex] = !sortDirection[colIndex];
-            const dir = sortDirection[colIndex] ? 1 : -1;
-            
-            rows.sort((a, b) => {
-                let aVal = a.cells[colIndex].textContent;
-                let bVal = b.cells[colIndex].textContent;
-                
-                if (colIndex === 1 || colIndex === 4) {
-                    aVal = parseFloat(aVal) || 0;
-                    bVal = parseFloat(bVal) || 0;
-                    return (aVal - bVal) * dir;
-                }
-                return aVal.localeCompare(bVal) * dir;
-            });
-            
-            rows.forEach(row => {
-                const evidenceRow = row.nextElementSibling;
-                tbody.appendChild(row);
-                if (evidenceRow?.classList.contains('evidence-row')) {
-                    tbody.appendChild(evidenceRow);
-                }
-            });
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
         
         function exportJSON() {
-            if (analysisResults.length === 0) {
+            if (!currentResult) {
                 alert('No results to export');
                 return;
             }
-            const blob = new Blob([JSON.stringify(analysisResults, null, 2)], {type: 'application/json'});
+            const blob = new Blob([JSON.stringify(currentResult, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'netsentinel_analysis.json';
+            a.download = 'netsentinel_omniscient.json';
             a.click();
-        }
-        
-        function exportCSV() {
-            if (analysisResults.length === 0) {
-                alert('No results to export');
-                return;
-            }
-            let csv = 'URL,Truth Score,Verdict,Claimed Brands,Manipulation Index,Domain Age,Anomaly\\n';
-            analysisResults.forEach(r => {
-                csv += `"${r.url}",${r.truth_score},"${r.verdict}","${r.semantic_analysis?.claimed_brands?.join(';') || ''}",${r.psychological_analysis?.manipulative_index || 0},${r.domain_consistency?.age_days || ''},${r.domain_consistency?.anomaly || ''}\\n`;
-            });
-            const blob = new Blob([csv], {type: 'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'netsentinel_analysis.csv';
-            a.click();
-        }
-        
-        function toggleTheme() {
-            document.body.classList.toggle('light-mode');
         }
         
         // Load history on start
         fetch('/history')
             .then(r => r.json())
             .then(history => {
-                history.slice(-5).forEach(r => addResultToTable(r));
+                history.slice(-3).forEach(r => addToResultsTable(r));
             });
     </script>
 </body>
@@ -895,21 +976,16 @@ DASHBOARD_HTML = '''
 @app.route('/')
 @app.route('/dashboard')
 def dashboard():
-    """Render the Minority Report dashboard."""
     return render_template_string(DASHBOARD_HTML)
 
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    """Analyze URLs and return results."""
     data = request.get_json()
     urls = data.get('urls', [])
     
     if not urls:
         return jsonify({'error': 'No URLs provided'}), 400
-    
-    if len(urls) > 100:
-        urls = urls[:100]
     
     results = []
     
@@ -918,7 +994,7 @@ def analyze():
         asyncio.set_event_loop(loop)
         try:
             async def run_analysis():
-                analyzer = NetSentinelAnalyzer()
+                analyzer = OmniscientAnalyzer()
                 async for result in analyzer.analyze_urls(urls):
                     results.append(dict(result))
                     save_result(dict(result))
@@ -930,7 +1006,8 @@ def analyze():
         for url in urls:
             results.append({
                 'url': url,
-                'truth_score': 0,
+                'risk_score': 0,
+                'category': 'ERROR',
                 'verdict': 'ERROR',
                 'error': 'Analyzer not available',
                 'evidence_log': ['>> ERROR: Analyzer module not loaded']
@@ -941,16 +1018,14 @@ def analyze():
 
 @app.route('/history')
 def history():
-    """Return analysis history."""
     return jsonify(get_history())
 
 
 if __name__ == '__main__':
-    print(f"\n{Fore.MAGENTA}{'='*60}")
-    print(f"{Fore.CYAN}NetSentinel v5.0{Fore.MAGENTA} // Minority Report Dashboard")
+    print(f"\n{Fore.YELLOW}{'='*60}")
+    print(f"{Fore.YELLOW}NetSentinel v6.0{Fore.WHITE} // THE OMNISCIENT EDITION")
     print(f"{'='*60}{Style.RESET_ALL}")
-    print(f"Philosophy: The Truth is in the Context, not the Ports.")
-    print(f"\nDashboard: {Fore.GREEN}http://localhost:5000{Style.RESET_ALL}")
+    print(f"\nDashboard: {Fore.GREEN}http://localhost:8080{Style.RESET_ALL}")
     print(f"Analyzer: {Fore.GREEN if ANALYZER_AVAILABLE else Fore.RED}{'ONLINE' if ANALYZER_AVAILABLE else 'OFFLINE'}{Style.RESET_ALL}")
     print(f"\nPress Ctrl+C to terminate\n")
     

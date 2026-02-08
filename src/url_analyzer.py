@@ -1,30 +1,30 @@
 """
 url_analyzer.py
-NetSentinel v5.0 - Cognitive Truth Engine
+NetSentinel v6.0 - THE OMNISCIENT EDITION
 
-Philosophy: "The Truth is in the Context, not the Ports."
+Ultimate URL Intelligence Platform combining:
+- MODULE A: Deep Network Recon (IP, Geo, ISP, ASN, Port Scan, Cloud Detection)
+- MODULE B: Temporal Forensics (Wayback Machine integration)
+- MODULE C: Content Classification (Phishing + Piracy/Warez Detection)
+- MODULE D: Cognitive Truth Engine (Brand Impersonation)
 
-This engine analyzes webpages for deception through:
-1. Semantic Mismatch Detection - Brand impersonation via content analysis
-2. Psychological Analysis - Fear/Greed/Urgency manipulation detection  
-3. Domain Consistency - Temporal anomalies and registrant verification
-
-Architecture: Pure AsyncIO + aiohttp for high-speed concurrent analysis.
+Architecture: AsyncIO + Aiohttp (Non-blocking, Massively Concurrent)
 """
 
 from __future__ import annotations
 
 import asyncio
 import re
+import socket
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from typing import (
     Dict, Any, List, Optional, Set, Tuple, AsyncIterator, TypedDict
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import aiohttp
 from bs4 import BeautifulSoup, Comment
@@ -35,16 +35,60 @@ try:
 except ImportError:
     WHOIS_AVAILABLE = False
 
+try:
+    import dns.resolver
+    DNS_AVAILABLE = True
+except ImportError:
+    DNS_AVAILABLE = False
 
-# Type definitions
-class SemanticAnalysis(TypedDict):
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TYPE DEFINITIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class NetworkIntel(TypedDict):
+    ip_address: Optional[str]
+    geolocation: Dict[str, str]
+    isp: Optional[str]
+    asn: Optional[str]
+    org: Optional[str]
+    open_ports: List[int]
+    cloud_provider: Optional[str]
+    is_bulletproof_host: bool
+    reverse_dns: Optional[str]
+
+
+class TemporalAnalysis(TypedDict):
+    wayback_first_seen: Optional[str]
+    wayback_last_seen: Optional[str]
+    wayback_snapshot_count: int
+    wayback_snapshots: List[str]
+    domain_age_days: Optional[int]
+    domain_created: Optional[str]
+    temporal_anomaly: Optional[str]
+    history_fabrication: bool
+
+
+class ContentClassification(TypedDict):
+    category: str
+    phishing_score: int
+    piracy_score: int
+    malware_score: int
+    ad_fraud_score: int
+    piracy_indicators: List[str]
+    phishing_indicators: List[str]
+    suspicious_scripts: List[str]
+    shady_ad_networks: List[str]
+
+
+class CognitiveAnalysis(TypedDict):
     extracted_title: str
     h1_tags: List[str]
-    copyright_texts: List[str]
     claimed_brands: List[str]
     domain: str
     registrant: Optional[str]
     impersonation_check: str
+    identity_mismatch: bool
 
 
 class PsychologicalAnalysis(TypedDict):
@@ -54,77 +98,112 @@ class PsychologicalAnalysis(TypedDict):
     verdict: str
 
 
-class DomainConsistency(TypedDict):
-    creation_date: Optional[str]
-    copyright_years: List[int]
-    anomaly: Optional[str]
-    age_days: Optional[int]
-
-
-class AnalysisResult(TypedDict):
+class OmniscientResult(TypedDict):
     url: str
-    truth_score: float
+    domain: str
+    risk_score: int
+    category: str
     verdict: str
-    semantic_analysis: SemanticAnalysis
+    threat_badges: List[str]
+    network_intel: NetworkIntel
+    temporal_analysis: TemporalAnalysis
+    content_classification: ContentClassification
+    cognitive_analysis: CognitiveAnalysis
     psychological_analysis: PsychologicalAnalysis
-    domain_consistency: DomainConsistency
     evidence_log: List[str]
     timestamp: str
     analysis_duration_ms: int
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# OMNISCIENT ENGINE
+# ═══════════════════════════════════════════════════════════════════════════════
+
 @dataclass
-class NetSentinelAnalyzer:
+class OmniscientAnalyzer:
     """
-    Cognitive Truth Engine for webpage deception detection.
+    NetSentinel v6.0 - The Omniscient Edition
     
-    Analyzes content semantics, psychological manipulation patterns,
-    and domain consistency to detect lies and impersonation.
+    Ultimate URL intelligence platform combining network recon,
+    temporal forensics, content classification, and cognitive analysis.
     """
     
-    # Known brands for impersonation detection (extensible)
+    # Known brands for impersonation detection
     known_brands: Set[str] = field(default_factory=lambda: {
         'Apple', 'PayPal', 'Binance', 'Microsoft', 'Amazon', 'Google',
-        'Facebook', 'Meta', 'Netflix', 'Spotify', 'Bank of America',
-        'Chase', 'Wells Fargo', 'Coinbase', 'Kraken', 'OpenAI', 'ChatGPT',
-        'Instagram', 'WhatsApp', 'Twitter', 'LinkedIn', 'Adobe', 'Dropbox',
-        'Uber', 'DHL', 'FedEx', 'UPS', 'USPS', 'IRS', 'Social Security',
-        'Steam', 'Epic Games', 'Blizzard', 'Sony', 'PlayStation', 'Nintendo',
-        'Walmart', 'Target', 'eBay', 'Etsy', 'Shopify', 'Stripe'
+        'Facebook', 'Meta', 'Netflix', 'Spotify', 'Disney', 'HBO',
+        'Prime Video', 'Hulu', 'YouTube', 'Chase', 'Bank of America',
+        'Wells Fargo', 'Coinbase', 'OpenAI', 'Instagram', 'WhatsApp',
+        'Twitter', 'LinkedIn', 'Adobe', 'Steam', 'Epic Games', 'Sony'
     })
     
-    # Psychological manipulation patterns with weights
+    # Bulletproof hosting providers
+    bulletproof_hosts: Set[str] = field(default_factory=lambda: {
+        'njalla', 'shinjiru', 'hostinger', '1984', 'bahnhof', 'flokinet',
+        'privatelayer', 'cyberbunker', 'ecatel', 'santrex', 'mccolo',
+        'bulletproof', 'offshore', 'anonymous'
+    })
+    
+    # Cloud providers (legitimate)
+    cloud_providers: Dict[str, List[str]] = field(default_factory=lambda: {
+        'AWS': ['amazon', 'aws', 'ec2', 'cloudfront', 'amazonaws'],
+        'Google Cloud': ['google', 'gcp', 'googlecloud', '1e100'],
+        'Azure': ['azure', 'microsoft', 'windowsazure', 'msedge'],
+        'Cloudflare': ['cloudflare', 'cf-'],
+        'DigitalOcean': ['digitalocean'],
+        'Linode': ['linode', 'akamai'],
+        'Vultr': ['vultr'],
+        'OVH': ['ovh', 'kimsufi'],
+        'Hetzner': ['hetzner']
+    })
+    
+    # Piracy/Warez detection patterns
+    piracy_keywords: List[str] = field(default_factory=lambda: [
+        r'\b1080p\b', r'\b720p\b', r'\b4k\b', r'\b2160p\b', r'\bhdtv\b',
+        r'\bcamrip\b', r'\bdvdrip\b', r'\bbrrip\b', r'\bbluray\b', r'\bwebrip\b',
+        r'\bhdcam\b', r'\byify\b', r'\byts\b', r'\brarbg\b', r'\btorrent\b',
+        r'\bmagnet\b', r'\bstream\s*free\b', r'\bwatch\s*free\b', r'\bfree\s*download\b',
+        r'\bcracked?\b', r'\bkeygen\b', r'\bserial\s*key\b', r'\bactivator\b',
+        r'\bpatch(ed)?\b', r'\bfull\s*version\b', r'\bunlocked\b', r'\bmod\s*apk\b',
+        r'\b(movie|film)s?\s*(download|watch)\b', r'\bsubtitles?\b', r'\bsrt\b',
+        r'\bepisodes?\s*\d+\b', r'\bseason\s*\d+\b', r'\bs\d+e\d+\b',
+        r'\bpirate(d|bay)?\b', r'\bwarez\b', r'\bnulledd?\b', r'\bleaked?\b'
+    ])
+    
+    # Magnet link pattern
+    magnet_pattern: str = r'magnet:\?xt=urn:[a-z0-9]+:[a-zA-Z0-9]+'
+    
+    # Shady ad networks (common on piracy sites)
+    shady_ad_networks: Set[str] = field(default_factory=lambda: {
+        'popads', 'popcash', 'propellerads', 'adsterra', 'exoclick',
+        'trafficjunky', 'juicyads', 'adskeeper', 'mgid', 'revcontent',
+        'taboola', 'outbrain', 'adcash', 'clickadu', 'hilltopads',
+        'evadav', 'pushhouse', 'richpush', 'megapush', 'pushengage',
+        'push.house', 'pushground', 'daocloud', 'admaven', 'adspyglass'
+    })
+    
+    # Psychological manipulation patterns
     fear_patterns: List[str] = field(default_factory=lambda: [
-        r'\bsuspended\b', r'\bhacked\b', r'\bblocked\b', r'\burgent\s*threat\b',
-        r'\baccount\s*(will\s+be\s+)?(closed|terminated|deleted)\b',
-        r'\bunauthorized\s*(access|activity)\b', r'\bsecurity\s*alert\b',
-        r'\bimmediately\b', r'\bwarning\b', r'\bviolation\b', r'\blocked\s*out\b',
-        r'\bcompromised\b', r'\bfraudulent\b', r'\billegal\s*activity\b',
-        r'\bverify\s*(your\s*)?(identity|account)\b', r'\brestricted\b'
+        r'\bsuspended\b', r'\bhacked\b', r'\bblocked\b', r'\burgent\b',
+        r'\baccount\s*(closed|terminated|deleted)\b', r'\bunauthorized\b',
+        r'\bsecurity\s*alert\b', r'\bwarning\b', r'\bviolation\b',
+        r'\bcompromised\b', r'\bfraudulent\b', r'\billegal\b'
     ])
     
     greed_patterns: List[str] = field(default_factory=lambda: [
-        r'\bbonus\b', r'\bfree\s*money\b', r'\bdouble\s*your\s*(deposit|investment)\b',
-        r'\bexclusive\s*offer\b', r'\bwinner\b', r'\bcongratulations\b',
-        r'\bprize\b', r'\bjackpot\b', r'\blottery\b', r'\binheritance\b',
-        r'\bmillion(s)?\s*(dollar|usd|euro)\b', r'\brisk[- ]?free\b',
-        r'\bguaranteed\s*(profit|return)\b', r'\bget\s*rich\b', r'\beasy\s*money\b',
-        r'\b100%\s*(bonus|return|profit)\b', r'\bno\s*deposit\b', r'\bfree\s*gift\b'
+        r'\bfree\s*money\b', r'\bdouble\s*your\b', r'\bwinner\b',
+        r'\bcongratulations\b', r'\bprize\b', r'\bjackpot\b', r'\blottery\b',
+        r'\bguaranteed\s*(profit|return)\b', r'\beasy\s*money\b', r'\b100%\s*bonus\b'
     ])
     
     urgency_patterns: List[str] = field(default_factory=lambda: [
         r'\b24\s*h(our)?s?\s*left\b', r'\blimited\s*time\b', r'\bact\s*now\b',
-        r'\bexpires?\s*(soon|today|in\s*\d+)\b', r'\blast\s*chance\b',
-        r'\bhurry\b', r'\bdon\'?t\s*miss\b', r'\bonly\s*\d+\s*(left|remaining)\b',
-        r'\btoday\s*only\b', r'\bonce\s*in\s*a\s*lifetime\b', r'\bnow\s*or\s*never\b',
-        r'\binstant\s*(access|approval)\b', r'\bact\s*fast\b', r'\bimmediately\b',
-        r'\bwithin\s*\d+\s*(hour|minute|day)\b', r'\bdeadline\b', r'\bfinal\s*notice\b'
+        r'\bexpires?\s*(soon|today)\b', r'\blast\s*chance\b', r'\bhurry\b',
+        r'\bimmediately\b', r'\btoday\s*only\b', r'\bfinal\s*notice\b'
     ])
     
-    # Weights for manipulation scoring
-    fear_weight: float = 1.5
-    greed_weight: float = 1.2
-    urgency_weight: float = 1.3
+    # Ports to scan
+    scan_ports: List[int] = field(default_factory=lambda: [21, 22, 53, 80, 443, 8080, 3389])
     
     # Networking config
     max_concurrent: int = 10
@@ -132,39 +211,24 @@ class NetSentinelAnalyzer:
     max_retries: int = 3
     
     def __post_init__(self) -> None:
-        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.executor = ThreadPoolExecutor(max_workers=6)
+        self._compiled_piracy = [re.compile(p, re.I) for p in self.piracy_keywords]
         self._compiled_fear = [re.compile(p, re.I) for p in self.fear_patterns]
         self._compiled_greed = [re.compile(p, re.I) for p in self.greed_patterns]
         self._compiled_urgency = [re.compile(p, re.I) for p in self.urgency_patterns]
+        self._magnet_regex = re.compile(self.magnet_pattern, re.I)
         self._brand_pattern = re.compile(
-            r'\b(' + '|'.join(re.escape(b) for b in self.known_brands) + r')\b',
-            re.I
+            r'\b(' + '|'.join(re.escape(b) for b in self.known_brands) + r')\b', re.I
         )
-        self._copyright_pattern = re.compile(
-            r'(?:copyright|©|\(c\))\s*(?:©\s*)?(\d{4})(?:\s*[-–]\s*(\d{4}))?',
-            re.I
-        )
-        self._year_pattern = re.compile(r'\b(19|20)\d{2}\b')
     
-    async def analyze_urls(
-        self, 
-        urls: List[str]
-    ) -> AsyncIterator[AnalysisResult]:
-        """
-        Analyze multiple URLs concurrently.
-        
-        Args:
-            urls: List of URLs to analyze (1-100)
-            
-        Yields:
-            AnalysisResult for each URL
-        """
+    async def analyze_urls(self, urls: List[str]) -> AsyncIterator[OmniscientResult]:
+        """Analyze multiple URLs concurrently."""
         if len(urls) > 100:
             urls = urls[:100]
-            
+        
         semaphore = asyncio.Semaphore(self.max_concurrent)
         
-        async def analyze_with_semaphore(url: str) -> AnalysisResult:
+        async def analyze_with_semaphore(url: str) -> OmniscientResult:
             async with semaphore:
                 return await self.analyze_url(url)
         
@@ -174,14 +238,11 @@ class NetSentinelAnalyzer:
             result = await coro
             yield result
     
-    async def analyze_url(self, url: str) -> AnalysisResult:
-        """
-        Perform comprehensive cognitive analysis on a single URL.
-        
-        Returns structured forensic evidence with truth scoring.
-        """
+    async def analyze_url(self, url: str) -> OmniscientResult:
+        """Perform omniscient analysis on a single URL."""
         start_time = datetime.now()
         evidence_log: List[str] = []
+        threat_badges: List[str] = []
         
         # Normalize URL
         if not url.startswith(('http://', 'https://')):
@@ -193,269 +254,568 @@ class NetSentinelAnalyzer:
         if not domain:
             return self._error_result(url, "Invalid URL format", start_time)
         
-        evidence_log.append(f">> INITIATING COGNITIVE SCAN: {domain}")
+        evidence_log.append(f">> OMNISCIENT SCAN INITIATED: {domain}")
+        evidence_log.append(f">> Target URL: {url}")
         
-        # Fetch HTML content with retries
+        # Run all analysis modules concurrently
+        network_task = asyncio.create_task(self._module_a_network_recon(domain, evidence_log))
+        temporal_task = asyncio.create_task(self._module_b_temporal_forensics(domain, evidence_log))
+        
+        # Fetch content first for other modules
         html_content, fetch_status = await self._fetch_with_retry(url, evidence_log)
         
         if html_content is None:
-            return self._error_result(
-                url, f"Failed to fetch content: {fetch_status}", 
-                start_time, evidence_log
-            )
-        
-        # Parse HTML
-        soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # Remove script and style elements for text analysis
-        for element in soup(['script', 'style', 'noscript']):
-            element.decompose()
-        
-        # Remove HTML comments
-        for comment in soup.find_all(string=lambda t: isinstance(t, Comment)):
-            comment.extract()
-        
-        # 1. Semantic Analysis (Brand Impersonation Detection)
-        semantic_result = await self._analyze_semantics(
-            soup, domain, evidence_log
-        )
-        
-        # 2. Psychological Analysis (Manipulation Detection)
-        psychological_result = self._analyze_psychology(soup, evidence_log)
-        
-        # 3. Domain Consistency (Temporal Anomalies)
-        domain_result = await self._analyze_domain_consistency(
-            domain, soup, evidence_log
-        )
-        
-        # Calculate Truth Score
-        truth_score = self._calculate_truth_score(
-            semantic_result, psychological_result, domain_result
-        )
-        
-        # Determine verdict
-        if truth_score >= 75:
-            verdict = "TRUTHFUL"
-        elif truth_score >= 50:
-            verdict = "SUSPICIOUS"
-        elif truth_score >= 25:
-            verdict = "DECEPTIVE"
+            # Continue with partial analysis
+            evidence_log.append(f">> CONTENT FETCH FAILED: {fetch_status}")
+            soup = None
         else:
-            verdict = "MALICIOUS_LIE"
+            soup = BeautifulSoup(html_content, 'html.parser')
+            for element in soup(['script', 'style', 'noscript']):
+                element.decompose()
         
-        evidence_log.append(f">> VERDICT: {verdict} (Truth Score: {truth_score:.1f}/100)")
+        # Wait for async tasks
+        network_result = await network_task
+        temporal_result = await temporal_task
+        
+        # Run content-dependent modules
+        if soup:
+            content_result = await self._module_c_content_classification(
+                soup, html_content, url, evidence_log
+            )
+            cognitive_result = await self._module_d_cognitive_engine(
+                soup, domain, evidence_log
+            )
+            psychological_result = self._analyze_psychology(soup, evidence_log)
+        else:
+            content_result = self._empty_content_classification()
+            cognitive_result = self._empty_cognitive_analysis(domain)
+            psychological_result = self._empty_psychological_analysis()
+        
+        # Determine threat badges
+        if content_result['piracy_score'] >= 50:
+            threat_badges.append("WAREZ")
+            evidence_log.append(">> 🏴‍☠️ THREAT BADGE: [WAREZ] Piracy/Copyright Infringement Detected")
+        if content_result['phishing_score'] >= 50:
+            threat_badges.append("PHISHING")
+            evidence_log.append(">> 🎣 THREAT BADGE: [PHISHING] Credential Harvesting Detected")
+        if content_result['malware_score'] >= 50:
+            threat_badges.append("MALWARE")
+            evidence_log.append(">> 🦠 THREAT BADGE: [MALWARE] Suspicious Payload Detected")
+        if content_result['ad_fraud_score'] >= 50:
+            threat_badges.append("AD-FRAUD")
+            evidence_log.append(">> 💰 THREAT BADGE: [AD-FRAUD] Shady Advertising Detected")
+        if cognitive_result['identity_mismatch']:
+            threat_badges.append("IMPERSONATION")
+            evidence_log.append(">> 🎭 THREAT BADGE: [IMPERSONATION] Brand Spoofing Detected")
+        if temporal_result['history_fabrication']:
+            threat_badges.append("HISTORY-FAKE")
+            evidence_log.append(">> 📅 THREAT BADGE: [HISTORY-FAKE] Temporal Anomaly Detected")
+        if network_result['is_bulletproof_host']:
+            threat_badges.append("BULLETPROOF")
+            evidence_log.append(">> 🛡️ THREAT BADGE: [BULLETPROOF] Abuse-Resistant Hosting")
+        
+        # Calculate composite risk score
+        risk_score = self._calculate_risk_score(
+            network_result, temporal_result, content_result,
+            cognitive_result, psychological_result
+        )
+        
+        # Determine primary category
+        category = self._determine_category(content_result, cognitive_result, threat_badges)
+        
+        # Final verdict
+        if risk_score >= 80:
+            verdict = "MALICIOUS"
+        elif risk_score >= 60:
+            verdict = "HIGH_RISK"
+        elif risk_score >= 40:
+            verdict = "SUSPICIOUS"
+        elif risk_score >= 20:
+            verdict = "LOW_RISK"
+        else:
+            verdict = "SAFE"
+        
+        evidence_log.append(f">> {'='*50}")
+        evidence_log.append(f">> VERDICT: {verdict} | Risk Score: {risk_score}/100")
+        evidence_log.append(f">> Category: {category}")
+        evidence_log.append(f">> Threat Badges: {threat_badges or ['NONE']}")
         
         duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)
         
-        return AnalysisResult(
+        return OmniscientResult(
             url=url,
-            truth_score=round(truth_score, 1),
+            domain=domain,
+            risk_score=risk_score,
+            category=category,
             verdict=verdict,
-            semantic_analysis=semantic_result,
+            threat_badges=threat_badges,
+            network_intel=network_result,
+            temporal_analysis=temporal_result,
+            content_classification=content_result,
+            cognitive_analysis=cognitive_result,
             psychological_analysis=psychological_result,
-            domain_consistency=domain_result,
             evidence_log=evidence_log,
             timestamp=datetime.now(timezone.utc).isoformat(),
             analysis_duration_ms=duration_ms
         )
     
-    async def _fetch_with_retry(
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODULE A: DEEP NETWORK RECON
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    async def _module_a_network_recon(
         self, 
-        url: str, 
+        domain: str, 
         evidence_log: List[str]
-    ) -> Tuple[Optional[str], str]:
-        """Fetch URL content with retries and timeout."""
-        timeout = aiohttp.ClientTimeout(total=self.timeout_seconds)
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
+    ) -> NetworkIntel:
+        """Deep network reconnaissance: IP, Geo, ISP, ASN, Ports, Cloud Detection."""
+        evidence_log.append(">> [MODULE A] NETWORK RECON: Initiating...")
+        
+        result: NetworkIntel = {
+            'ip_address': None,
+            'geolocation': {},
+            'isp': None,
+            'asn': None,
+            'org': None,
+            'open_ports': [],
+            'cloud_provider': None,
+            'is_bulletproof_host': False,
+            'reverse_dns': None
         }
         
-        for attempt in range(self.max_retries):
-            try:
-                async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.get(url, headers=headers, ssl=False, 
-                                          allow_redirects=True) as response:
-                        
-                        content_type = response.headers.get('Content-Type', '')
-                        
-                        if 'text/html' not in content_type and 'text/plain' not in content_type:
-                            evidence_log.append(f">> SKIP: Non-HTML content ({content_type})")
-                            return None, f"Non-HTML content: {content_type}"
-                        
-                        html = await response.text()
-                        evidence_log.append(f">> FETCH: HTTP {response.status} ({len(html)} bytes)")
-                        return html, "OK"
-                        
-            except asyncio.TimeoutError:
-                evidence_log.append(f">> RETRY {attempt + 1}/{self.max_retries}: Timeout")
-            except aiohttp.ClientError as e:
-                evidence_log.append(f">> RETRY {attempt + 1}/{self.max_retries}: {type(e).__name__}")
-            except Exception as e:
-                evidence_log.append(f">> ERROR: {type(e).__name__}: {str(e)}")
-                return None, str(e)
-            
-            if attempt < self.max_retries - 1:
-                await asyncio.sleep(1)
-        
-        return None, "Max retries exceeded"
-    
-    async def _analyze_semantics(
-        self, 
-        soup: BeautifulSoup, 
-        domain: str,
-        evidence_log: List[str]
-    ) -> SemanticAnalysis:
-        """Detect brand impersonation through semantic analysis."""
-        
-        # Extract title
-        title_tag = soup.find('title')
-        title = title_tag.get_text(strip=True) if title_tag else ""
-        evidence_log.append(f">> PARSE TITLE: '{title[:60]}...' " if len(title) > 60 else f">> PARSE TITLE: '{title}'")
-        
-        # Extract H1 tags
-        h1_tags = [h1.get_text(strip=True) for h1 in soup.find_all('h1')]
-        if h1_tags:
-            evidence_log.append(f">> FOUND {len(h1_tags)} H1 TAGS: {h1_tags[:3]}")
-        
-        # Extract copyright notices
-        full_text = soup.get_text()
-        copyright_matches = self._copyright_pattern.findall(full_text)
-        copyright_texts = [f"© {m[0]}" + (f"-{m[1]}" if m[1] else "") for m in copyright_matches]
-        
-        # Find claimed brands in content
-        all_text = title + " " + " ".join(h1_tags) + " " + full_text[:5000]
-        brand_matches = self._brand_pattern.findall(all_text)
-        claimed_brands = list(set(b.title() for b in brand_matches))
-        
-        if claimed_brands:
-            evidence_log.append(f">> BRAND DETECTION: {claimed_brands}")
-        
-        # Get WHOIS registrant info
-        registrant = None
-        impersonation_check = "No impersonation detected"
-        
-        if claimed_brands and WHOIS_AVAILABLE:
-            loop = asyncio.get_event_loop()
-            try:
-                whois_data = await loop.run_in_executor(
-                    self.executor, self._get_whois_registrant, domain
-                )
-                registrant = whois_data.get('registrant')
-                
-                evidence_log.append(f">> WHOIS REGISTRANT: '{registrant or 'REDACTED/UNKNOWN'}'")
-                
-                # Check for impersonation
-                for brand in claimed_brands:
-                    if not self._is_legitimate_brand_domain(brand, domain, registrant):
-                        impersonation_check = (
-                            f"⚠️ IDENTITY MISMATCH: Claims '{brand}' but domain "
-                            f"'{domain}' owned by '{registrant or 'Unknown'}', not {brand} Inc."
-                        )
-                        evidence_log.append(f">> 🚨 LIE DETECTED: {impersonation_check}")
-                        break
-                        
-            except Exception as e:
-                evidence_log.append(f">> WHOIS ERROR: {str(e)}")
-        
-        return SemanticAnalysis(
-            extracted_title=title,
-            h1_tags=h1_tags[:5],
-            copyright_texts=copyright_texts[:3],
-            claimed_brands=claimed_brands,
-            domain=domain,
-            registrant=registrant,
-            impersonation_check=impersonation_check
-        )
-    
-    def _get_whois_registrant(self, domain: str) -> Dict[str, Any]:
-        """Blocking WHOIS lookup (runs in executor)."""
+        # Resolve IP
         try:
-            # Handle punycode for international domains
-            if any(ord(c) > 127 for c in domain):
-                domain = domain.encode('idna').decode('ascii')
-            
+            loop = asyncio.get_event_loop()
+            ip = await loop.run_in_executor(self.executor, socket.gethostbyname, domain)
+            result['ip_address'] = ip
+            evidence_log.append(f">> [NETWORK] IP Resolved: {ip}")
+        except socket.gaierror:
+            evidence_log.append(f">> [NETWORK] DNS Resolution Failed")
+            return result
+        
+        # Get IP info from free API (ip-api.com)
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f'http://ip-api.com/json/{ip}?fields=status,country,countryCode,region,city,isp,org,as,hosting',
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get('status') == 'success':
+                            result['geolocation'] = {
+                                'country': data.get('country', ''),
+                                'country_code': data.get('countryCode', ''),
+                                'region': data.get('region', ''),
+                                'city': data.get('city', '')
+                            }
+                            result['isp'] = data.get('isp')
+                            result['org'] = data.get('org')
+                            result['asn'] = data.get('as')
+                            
+                            evidence_log.append(f">> [NETWORK] Location: {data.get('city')}, {data.get('country')}")
+                            evidence_log.append(f">> [NETWORK] ISP: {data.get('isp')}")
+                            evidence_log.append(f">> [NETWORK] ASN: {data.get('as')}")
+                            
+                            # Check for bulletproof hosting
+                            org_lower = (data.get('org', '') + data.get('isp', '')).lower()
+                            if any(bp in org_lower for bp in self.bulletproof_hosts):
+                                result['is_bulletproof_host'] = True
+                                evidence_log.append(">> [NETWORK] ⚠️ BULLETPROOF HOSTING DETECTED")
+                            
+                            # Check for cloud provider
+                            for provider, keywords in self.cloud_providers.items():
+                                if any(kw in org_lower for kw in keywords):
+                                    result['cloud_provider'] = provider
+                                    evidence_log.append(f">> [NETWORK] Cloud Provider: {provider}")
+                                    break
+        except Exception as e:
+            evidence_log.append(f">> [NETWORK] IP-API Error: {str(e)}")
+        
+        # Async port scan
+        open_ports = await self._async_port_scan(ip, evidence_log)
+        result['open_ports'] = open_ports
+        
+        # Reverse DNS
+        try:
+            loop = asyncio.get_event_loop()
+            rdns = await loop.run_in_executor(
+                self.executor,
+                lambda: socket.gethostbyaddr(ip)[0]
+            )
+            result['reverse_dns'] = rdns
+            evidence_log.append(f">> [NETWORK] Reverse DNS: {rdns}")
+        except:
+            pass
+        
+        return result
+    
+    async def _async_port_scan(
+        self, 
+        ip: str, 
+        evidence_log: List[str]
+    ) -> List[int]:
+        """Async port scan for common ports."""
+        evidence_log.append(f">> [PORTSCAN] Scanning ports: {self.scan_ports}")
+        open_ports = []
+        
+        async def check_port(port: int) -> Optional[int]:
+            try:
+                fut = asyncio.open_connection(ip, port)
+                reader, writer = await asyncio.wait_for(fut, timeout=2)
+                writer.close()
+                await writer.wait_closed()
+                return port
+            except:
+                return None
+        
+        tasks = [check_port(port) for port in self.scan_ports]
+        results = await asyncio.gather(*tasks)
+        
+        for result in results:
+            if result is not None:
+                open_ports.append(result)
+        
+        if open_ports:
+            evidence_log.append(f">> [PORTSCAN] Open ports: {open_ports}")
+        else:
+            evidence_log.append(">> [PORTSCAN] No common ports open (filtered/stealth)")
+        
+        return open_ports
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODULE B: TEMPORAL FORENSICS
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    async def _module_b_temporal_forensics(
+        self, 
+        domain: str, 
+        evidence_log: List[str]
+    ) -> TemporalAnalysis:
+        """Query Wayback Machine and detect temporal anomalies."""
+        evidence_log.append(">> [MODULE B] TEMPORAL FORENSICS: Querying Time Machine...")
+        
+        result: TemporalAnalysis = {
+            'wayback_first_seen': None,
+            'wayback_last_seen': None,
+            'wayback_snapshot_count': 0,
+            'wayback_snapshots': [],
+            'domain_age_days': None,
+            'domain_created': None,
+            'temporal_anomaly': None,
+            'history_fabrication': False
+        }
+        
+        # Get domain WHOIS info
+        if WHOIS_AVAILABLE:
+            try:
+                loop = asyncio.get_event_loop()
+                whois_data = await loop.run_in_executor(
+                    self.executor, self._get_whois_info, domain
+                )
+                if whois_data.get('creation_date'):
+                    result['domain_created'] = whois_data['creation_date']
+                    result['domain_age_days'] = whois_data.get('age_days')
+                    evidence_log.append(f">> [TEMPORAL] Domain Created: {whois_data['creation_date']}")
+                    evidence_log.append(f">> [TEMPORAL] Domain Age: {whois_data.get('age_days')} days")
+            except Exception as e:
+                evidence_log.append(f">> [TEMPORAL] WHOIS Error: {str(e)}")
+        
+        # Query Wayback Machine CDX API
+        try:
+            async with aiohttp.ClientSession() as session:
+                cdx_url = (
+                    f'https://web.archive.org/cdx/search/cdx?url={domain}'
+                    f'&output=json&limit=100&fl=timestamp,statuscode'
+                )
+                async with session.get(cdx_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        
+                        if len(data) > 1:  # First row is header
+                            snapshots = data[1:]  # Skip header
+                            result['wayback_snapshot_count'] = len(snapshots)
+                            
+                            # Get first and last seen
+                            if snapshots:
+                                first_ts = snapshots[0][0]
+                                last_ts = snapshots[-1][0]
+                                
+                                result['wayback_first_seen'] = self._parse_wayback_timestamp(first_ts)
+                                result['wayback_last_seen'] = self._parse_wayback_timestamp(last_ts)
+                                
+                                # Sample some snapshots for timeline
+                                step = max(1, len(snapshots) // 10)
+                                result['wayback_snapshots'] = [
+                                    self._parse_wayback_timestamp(s[0]) 
+                                    for s in snapshots[::step]
+                                ][:10]
+                                
+                                evidence_log.append(f">> [WAYBACK] First Seen: {result['wayback_first_seen']}")
+                                evidence_log.append(f">> [WAYBACK] Last Seen: {result['wayback_last_seen']}")
+                                evidence_log.append(f">> [WAYBACK] Snapshots: {len(snapshots)}")
+                                
+                                # Check for temporal anomalies
+                                if result['domain_age_days'] is not None:
+                                    domain_age_years = result['domain_age_days'] / 365
+                                    first_seen_year = int(first_ts[:4])
+                                    current_year = datetime.now().year
+                                    
+                                    # If domain is "old" but Wayback has recent first snapshot
+                                    if domain_age_years > 5 and first_seen_year > current_year - 1:
+                                        result['temporal_anomaly'] = (
+                                            f"DROP-CATCH DOMAIN: Claims {domain_age_years:.0f} years old "
+                                            f"but Wayback first saw it in {first_seen_year}"
+                                        )
+                                        result['history_fabrication'] = True
+                                        evidence_log.append(f">> [WAYBACK] ⚠️ TEMPORAL ANOMALY: {result['temporal_anomaly']}")
+                        else:
+                            evidence_log.append(">> [WAYBACK] No archive history found (never archived)")
+                            
+                            # New domain with no history is suspicious
+                            if result['domain_age_days'] and result['domain_age_days'] < 30:
+                                result['temporal_anomaly'] = "GHOST DOMAIN: New domain with zero web presence"
+                                evidence_log.append(f">> [WAYBACK] ⚠️ {result['temporal_anomaly']}")
+                                
+        except Exception as e:
+            evidence_log.append(f">> [WAYBACK] API Error: {str(e)}")
+        
+        return result
+    
+    def _parse_wayback_timestamp(self, ts: str) -> str:
+        """Parse Wayback Machine timestamp to readable date."""
+        try:
+            return f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
+        except:
+            return ts
+    
+    def _get_whois_info(self, domain: str) -> Dict[str, Any]:
+        """Blocking WHOIS lookup."""
+        try:
             w = whois.whois(domain)
-            
-            registrant = None
-            if w.org:
-                registrant = w.org if isinstance(w.org, str) else w.org[0]
-            elif w.name:
-                registrant = w.name if isinstance(w.name, str) else w.name[0]
-            elif w.registrant_name:
-                registrant = w.registrant_name
-                
             creation_date = w.creation_date
             if isinstance(creation_date, list):
                 creation_date = creation_date[0]
             
+            age_days = None
+            creation_str = None
+            if creation_date:
+                if hasattr(creation_date, 'date'):
+                    creation_str = str(creation_date.date())
+                    age_days = (datetime.now() - creation_date.replace(tzinfo=None)).days
+                else:
+                    creation_str = str(creation_date)
+            
+            registrant = None
+            if w.org:
+                registrant = w.org if isinstance(w.org, str) else w.org[0]
+            
             return {
-                'registrant': registrant,
-                'creation_date': creation_date,
-                'registrar': w.registrar
+                'creation_date': creation_str,
+                'age_days': age_days,
+                'registrant': registrant
             }
-        except Exception:
-            return {'registrant': None, 'creation_date': None, 'registrar': None}
+        except:
+            return {}
     
-    def _is_legitimate_brand_domain(
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODULE C: CONTENT CLASSIFICATION
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    async def _module_c_content_classification(
         self, 
-        brand: str, 
-        domain: str, 
-        registrant: Optional[str]
-    ) -> bool:
-        """Check if domain legitimately represents the brand."""
-        brand_lower = brand.lower()
-        domain_lower = domain.lower()
+        soup: BeautifulSoup,
+        html_raw: str,
+        url: str,
+        evidence_log: List[str]
+    ) -> ContentClassification:
+        """Classify content: Phishing, Piracy, Malware, Ad-Fraud."""
+        evidence_log.append(">> [MODULE C] CONTENT CLASSIFICATION: Analyzing...")
         
-        # Check if brand is in domain (legitimate patterns)
-        if brand_lower in domain_lower:
-            # But watch for typosquatting like "paypa1" vs "paypal"
-            # Simple check: brand should match exactly, not with letter substitutions
-            patterns = [
-                brand_lower,
-                brand_lower.replace(' ', ''),
-                brand_lower.replace(' ', '-'),
-            ]
-            if any(p in domain_lower for p in patterns):
-                return True
+        result: ContentClassification = {
+            'category': 'UNKNOWN',
+            'phishing_score': 0,
+            'piracy_score': 0,
+            'malware_score': 0,
+            'ad_fraud_score': 0,
+            'piracy_indicators': [],
+            'phishing_indicators': [],
+            'suspicious_scripts': [],
+            'shady_ad_networks': []
+        }
         
-        # Check registrant matches brand
-        if registrant:
-            registrant_lower = registrant.lower()
-            similarity = SequenceMatcher(None, brand_lower, registrant_lower).ratio()
-            if similarity > 0.6:
-                return True
-            if brand_lower in registrant_lower:
-                return True
+        body = soup.find('body')
+        text = body.get_text(separator=' ', strip=True).lower() if body else ""
         
-        # Levenshtein distance for typosquatting detection
-        domain_base = domain_lower.split('.')[0].replace('www', '').replace('-', '')
-        if self._levenshtein_distance(brand_lower.replace(' ', ''), domain_base) <= 2:
-            # Close match could be typosquatting
-            return False
+        # ─── PIRACY DETECTION ───
+        piracy_count = 0
+        for pattern in self._compiled_piracy:
+            matches = pattern.findall(text)
+            if matches:
+                piracy_count += len(matches)
+                indicator = matches[0] if isinstance(matches[0], str) else matches[0][0]
+                if indicator not in result['piracy_indicators']:
+                    result['piracy_indicators'].append(indicator)
         
-        return False
+        # Check for magnet links
+        magnet_matches = self._magnet_regex.findall(html_raw)
+        if magnet_matches:
+            piracy_count += len(magnet_matches) * 5  # Heavy weight
+            result['piracy_indicators'].append(f"magnet links ({len(magnet_matches)})")
+            evidence_log.append(f">> [PIRACY] ⚠️ {len(magnet_matches)} MAGNET LINKS DETECTED")
+        
+        # Check for streaming/download buttons
+        download_btns = soup.find_all(['a', 'button'], string=re.compile(r'download|stream|watch|play', re.I))
+        if len(download_btns) > 5:
+            piracy_count += len(download_btns)
+            result['piracy_indicators'].append(f"download buttons ({len(download_btns)})")
+        
+        result['piracy_score'] = min(100, piracy_count * 5)
+        
+        if result['piracy_indicators']:
+            evidence_log.append(f">> [PIRACY] Indicators: {result['piracy_indicators'][:5]}")
+            evidence_log.append(f">> [PIRACY] Score: {result['piracy_score']}/100")
+        
+        # ─── PHISHING DETECTION ───
+        phishing_count = 0
+        
+        # Login forms
+        login_forms = soup.find_all('form')
+        password_fields = soup.find_all('input', {'type': 'password'})
+        if password_fields:
+            phishing_count += len(password_fields) * 10
+            result['phishing_indicators'].append(f"password fields ({len(password_fields)})")
+        
+        # Brand mentions without ownership
+        parsed = urlparse(url)
+        for brand in self.known_brands:
+            if brand.lower() in text and brand.lower() not in parsed.netloc.lower():
+                phishing_count += 15
+                result['phishing_indicators'].append(f"brand mention: {brand}")
+                break
+        
+        result['phishing_score'] = min(100, phishing_count)
+        
+        if result['phishing_indicators']:
+            evidence_log.append(f">> [PHISHING] Indicators: {result['phishing_indicators'][:5]}")
+        
+        # ─── AD-FRAUD / SHADY NETWORKS ───
+        scripts = soup.find_all('script', src=True)
+        iframes = soup.find_all('iframe')
+        
+        for script in scripts:
+            src = script.get('src', '').lower()
+            for ad_net in self.shady_ad_networks:
+                if ad_net in src:
+                    result['shady_ad_networks'].append(ad_net)
+                    result['ad_fraud_score'] += 15
+        
+        # Excessive iframes (popup/popunder indicator)
+        if len(iframes) > 10:
+            result['ad_fraud_score'] += 20
+            evidence_log.append(f">> [AD-FRAUD] ⚠️ Excessive iframes: {len(iframes)}")
+        
+        # Onclick handlers (popunders)
+        onclick_elements = soup.find_all(attrs={'onclick': True})
+        if len(onclick_elements) > 20:
+            result['ad_fraud_score'] += 15
+            evidence_log.append(f">> [AD-FRAUD] ⚠️ Excessive onclick handlers: {len(onclick_elements)}")
+        
+        result['ad_fraud_score'] = min(100, result['ad_fraud_score'])
+        
+        if result['shady_ad_networks']:
+            evidence_log.append(f">> [AD-FRAUD] Shady Networks: {result['shady_ad_networks']}")
+        
+        # ─── MALWARE INDICATORS ───
+        suspicious_patterns = [
+            r'eval\s*\(', r'document\.write\s*\(', r'unescape\s*\(',
+            r'fromCharCode', r'\\x[0-9a-f]{2}', r'atob\s*\('
+        ]
+        
+        script_tags = soup.find_all('script')
+        for script in script_tags:
+            if script.string:
+                for pattern in suspicious_patterns:
+                    if re.search(pattern, script.string, re.I):
+                        result['suspicious_scripts'].append(pattern)
+                        result['malware_score'] += 10
+        
+        result['malware_score'] = min(100, result['malware_score'])
+        
+        # ─── DETERMINE PRIMARY CATEGORY ───
+        scores = {
+            'PIRACY': result['piracy_score'],
+            'PHISHING': result['phishing_score'],
+            'MALWARE': result['malware_score'],
+            'AD-FRAUD': result['ad_fraud_score']
+        }
+        
+        max_score = max(scores.values())
+        if max_score >= 30:
+            result['category'] = max(scores, key=scores.get)
+        else:
+            result['category'] = 'LEGITIMATE'
+        
+        evidence_log.append(f">> [CONTENT] Category: {result['category']}")
+        
+        return result
     
-    def _levenshtein_distance(self, s1: str, s2: str) -> int:
-        """Simple Levenshtein distance implementation."""
-        if len(s1) < len(s2):
-            return self._levenshtein_distance(s2, s1)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODULE D: COGNITIVE TRUTH ENGINE
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    async def _module_d_cognitive_engine(
+        self, 
+        soup: BeautifulSoup, 
+        domain: str,
+        evidence_log: List[str]
+    ) -> CognitiveAnalysis:
+        """Compare page claims vs domain reality."""
+        evidence_log.append(">> [MODULE D] COGNITIVE ENGINE: Truth Analysis...")
         
-        if len(s2) == 0:
-            return len(s1)
+        result: CognitiveAnalysis = {
+            'extracted_title': '',
+            'h1_tags': [],
+            'claimed_brands': [],
+            'domain': domain,
+            'registrant': None,
+            'impersonation_check': 'No impersonation detected',
+            'identity_mismatch': False
+        }
         
-        previous_row = range(len(s2) + 1)
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
+        # Extract title
+        title_tag = soup.find('title')
+        result['extracted_title'] = title_tag.get_text(strip=True) if title_tag else ""
         
-        return previous_row[-1]
+        # Extract H1 tags
+        result['h1_tags'] = [h1.get_text(strip=True) for h1 in soup.find_all('h1')][:5]
+        
+        # Find claimed brands
+        all_text = result['extracted_title'] + " " + " ".join(result['h1_tags'])
+        brand_matches = self._brand_pattern.findall(all_text)
+        result['claimed_brands'] = list(set(b.title() for b in brand_matches))
+        
+        if result['claimed_brands']:
+            evidence_log.append(f">> [COGNITIVE] Claimed Brands: {result['claimed_brands']}")
+            
+            # Check for identity mismatch
+            domain_lower = domain.lower()
+            for brand in result['claimed_brands']:
+                if brand.lower() not in domain_lower:
+                    # This is a potential impersonation
+                    result['impersonation_check'] = (
+                        f"⚠️ IDENTITY MISMATCH: Page claims '{brand}' "
+                        f"but domain is '{domain}'"
+                    )
+                    result['identity_mismatch'] = True
+                    evidence_log.append(f">> [COGNITIVE] 🚨 LIE DETECTED: {result['impersonation_check']}")
+                    break
+        
+        return result
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PSYCHOLOGICAL ANALYSIS
+    # ═══════════════════════════════════════════════════════════════════════════
     
     def _analyze_psychology(
         self, 
@@ -465,59 +825,33 @@ class NetSentinelAnalyzer:
         """Analyze psychological manipulation patterns."""
         body = soup.find('body')
         if not body:
-            return PsychologicalAnalysis(
-                manipulative_index=0,
-                triggers={'fear': 0, 'greed': 0, 'urgency': 0},
-                body_word_count=0,
-                verdict="Unable to analyze (no body)"
-            )
+            return self._empty_psychological_analysis()
         
         text = body.get_text(separator=' ', strip=True).lower()
         words = text.split()
         word_count = len(words)
         
         if word_count == 0:
-            return PsychologicalAnalysis(
-                manipulative_index=0,
-                triggers={'fear': 0, 'greed': 0, 'urgency': 0},
-                body_word_count=0,
-                verdict="Empty page content"
-            )
+            return self._empty_psychological_analysis()
         
-        # Count pattern matches
         fear_count = sum(1 for p in self._compiled_fear if p.search(text))
         greed_count = sum(1 for p in self._compiled_greed if p.search(text))
         urgency_count = sum(1 for p in self._compiled_urgency if p.search(text))
         
-        # Calculate weighted manipulation index
-        raw_score = (
-            (fear_count * self.fear_weight) +
-            (greed_count * self.greed_weight) +
-            (urgency_count * self.urgency_weight)
-        )
-        
-        # Normalize by word count, scale to 0-100
+        raw_score = (fear_count * 1.5) + (greed_count * 1.2) + (urgency_count * 1.3)
         manipulative_index = min(100, (raw_score / max(word_count, 100)) * 500)
         
-        # Log significant findings
-        if fear_count > 0:
-            evidence_log.append(f">> FEAR TRIGGERS: {fear_count} patterns detected")
-        if greed_count > 0:
-            evidence_log.append(f">> GREED TRIGGERS: {greed_count} patterns detected")
-        if urgency_count > 0:
-            evidence_log.append(f">> URGENCY TRIGGERS: {urgency_count} patterns detected")
-        
-        # Determine verdict
         if manipulative_index >= 70:
-            verdict = "HIGH MANIPULATION - Likely scam"
+            verdict = "HIGH MANIPULATION"
         elif manipulative_index >= 40:
-            verdict = "MODERATE MANIPULATION - Exercise caution"
+            verdict = "MODERATE MANIPULATION"
         elif manipulative_index >= 15:
-            verdict = "MILD MANIPULATION - Normal marketing"
+            verdict = "MILD MANIPULATION"
         else:
-            verdict = "LOW MANIPULATION - Appears genuine"
+            verdict = "LOW MANIPULATION"
         
-        evidence_log.append(f">> MANIPULATION INDEX: {manipulative_index:.1f}/100 ({verdict})")
+        if manipulative_index > 20:
+            evidence_log.append(f">> [PSYCH] Manipulation Index: {manipulative_index:.1f}/100 ({verdict})")
         
         return PsychologicalAnalysis(
             manipulative_index=round(manipulative_index, 1),
@@ -526,214 +860,194 @@ class NetSentinelAnalyzer:
             verdict=verdict
         )
     
-    async def _analyze_domain_consistency(
-        self, 
-        domain: str,
-        soup: BeautifulSoup,
-        evidence_log: List[str]
-    ) -> DomainConsistency:
-        """Check for temporal anomalies between domain age and copyright claims."""
-        result = DomainConsistency(
-            creation_date=None,
-            copyright_years=[],
-            anomaly=None,
-            age_days=None
-        )
-        
-        # Extract copyright years from page
-        full_text = soup.get_text()
-        year_matches = self._year_pattern.findall(full_text)
-        copyright_years = [int(f"{match[0]}{match[1] if isinstance(match, tuple) else match}") 
-                         for match in year_matches if isinstance(match, str) or len(match) == 2]
-        
-        # Get unique years, filter to valid range
-        current_year = datetime.now().year
-        valid_years = sorted(set(y for y in copyright_years if 1990 <= y <= current_year + 1))
-        result['copyright_years'] = valid_years[:5]
-        
-        # Get domain creation date via WHOIS
-        if WHOIS_AVAILABLE:
-            loop = asyncio.get_event_loop()
-            try:
-                await asyncio.sleep(1)  # Rate limiting
-                whois_data = await loop.run_in_executor(
-                    self.executor, self._get_whois_registrant, domain
-                )
-                creation_date = whois_data.get('creation_date')
-                
-                if creation_date:
-                    result['creation_date'] = str(creation_date.date()) if hasattr(creation_date, 'date') else str(creation_date)
-                    
-                    if hasattr(creation_date, 'year'):
-                        creation_year = creation_date.year
-                        age_days = (datetime.now() - creation_date.replace(tzinfo=None)).days
-                        result['age_days'] = age_days
-                        
-                        evidence_log.append(f">> DOMAIN AGE: {age_days} days (created {creation_year})")
-                        
-                        # Check for temporal anomalies
-                        if valid_years:
-                            min_copyright = min(valid_years)
-                            if min_copyright < creation_year - 1:
-                                anomaly = (
-                                    f"⚠️ TEMPORAL ANOMALY: Copyright claims {min_copyright} "
-                                    f"but domain created in {creation_year} "
-                                    f"({creation_year - min_copyright} year discrepancy)"
-                                )
-                                result['anomaly'] = anomaly
-                                evidence_log.append(f">> 🚨 {anomaly}")
-                            elif min_copyright > current_year + 1:
-                                anomaly = f"⚠️ TEMPORAL ANOMALY: Future copyright year {min_copyright}"
-                                result['anomaly'] = anomaly
-                                evidence_log.append(f">> 🚨 {anomaly}")
-                                
-            except Exception as e:
-                evidence_log.append(f">> DOMAIN WHOIS ERROR: {str(e)}")
-        
-        return result
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HELPER METHODS
+    # ═══════════════════════════════════════════════════════════════════════════
     
-    def _calculate_truth_score(
+    async def _fetch_with_retry(
+        self, 
+        url: str, 
+        evidence_log: List[str]
+    ) -> Tuple[Optional[str], str]:
+        """Fetch URL with retries."""
+        timeout = aiohttp.ClientTimeout(total=self.timeout_seconds)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+        
+        for attempt in range(self.max_retries):
+            try:
+                async with aiohttp.ClientSession(timeout=timeout) as session:
+                    async with session.get(url, headers=headers, ssl=False, 
+                                          allow_redirects=True) as response:
+                        html = await response.text()
+                        evidence_log.append(f">> [FETCH] HTTP {response.status} ({len(html)} bytes)")
+                        return html, "OK"
+            except Exception as e:
+                evidence_log.append(f">> [FETCH] Attempt {attempt + 1} failed: {type(e).__name__}")
+                if attempt < self.max_retries - 1:
+                    await asyncio.sleep(1)
+        
+        return None, "Max retries exceeded"
+    
+    def _calculate_risk_score(
         self,
-        semantic: SemanticAnalysis,
-        psychological: PsychologicalAnalysis,
-        domain: DomainConsistency
-    ) -> float:
-        """
-        Calculate overall truth score (0-100).
+        network: NetworkIntel,
+        temporal: TemporalAnalysis,
+        content: ContentClassification,
+        cognitive: CognitiveAnalysis,
+        psychological: PsychologicalAnalysis
+    ) -> int:
+        """Calculate composite risk score."""
+        score = 0
         
-        Higher = more truthful, Lower = more deceptive.
-        """
-        score = 100.0
+        # Content-based scoring (highest weight)
+        score += content['piracy_score'] * 0.3
+        score += content['phishing_score'] * 0.3
+        score += content['malware_score'] * 0.2
+        score += content['ad_fraud_score'] * 0.15
         
-        # Deductions for impersonation
-        if "IDENTITY MISMATCH" in semantic['impersonation_check']:
-            score -= 40
-        elif "⚠️" in semantic['impersonation_check']:
-            score -= 25
+        # Cognitive
+        if cognitive['identity_mismatch']:
+            score += 25
         
-        # Deductions for manipulation
-        manip_index = psychological['manipulative_index']
-        if manip_index >= 70:
-            score -= 35
-        elif manip_index >= 40:
-            score -= 20
-        elif manip_index >= 15:
-            score -= 10
+        # Temporal
+        if temporal['history_fabrication']:
+            score += 20
+        if temporal['domain_age_days'] is not None and temporal['domain_age_days'] < 30:
+            score += 15
         
-        # Deductions for temporal anomalies
-        if domain['anomaly']:
-            score -= 15
+        # Network
+        if network['is_bulletproof_host']:
+            score += 15
         
-        # Deductions for very new domains (<30 days)
-        if domain['age_days'] is not None:
-            if domain['age_days'] < 7:
-                score -= 20
-            elif domain['age_days'] < 30:
-                score -= 10
+        # Psychological
+        if psychological['manipulative_index'] >= 50:
+            score += 10
         
-        return max(0, min(100, score))
+        return min(100, int(score))
+    
+    def _determine_category(
+        self,
+        content: ContentClassification,
+        cognitive: CognitiveAnalysis,
+        badges: List[str]
+    ) -> str:
+        """Determine primary threat category."""
+        if 'WAREZ' in badges:
+            return 'PIRACY/WAREZ'
+        if 'PHISHING' in badges:
+            return 'PHISHING'
+        if 'MALWARE' in badges:
+            return 'MALWARE'
+        if 'IMPERSONATION' in badges:
+            return 'IMPERSONATION'
+        if 'AD-FRAUD' in badges:
+            return 'AD-FRAUD'
+        return 'LEGITIMATE'
+    
+    def _empty_content_classification(self) -> ContentClassification:
+        return ContentClassification(
+            category='UNKNOWN',
+            phishing_score=0,
+            piracy_score=0,
+            malware_score=0,
+            ad_fraud_score=0,
+            piracy_indicators=[],
+            phishing_indicators=[],
+            suspicious_scripts=[],
+            shady_ad_networks=[]
+        )
+    
+    def _empty_cognitive_analysis(self, domain: str) -> CognitiveAnalysis:
+        return CognitiveAnalysis(
+            extracted_title='',
+            h1_tags=[],
+            claimed_brands=[],
+            domain=domain,
+            registrant=None,
+            impersonation_check='Unable to analyze',
+            identity_mismatch=False
+        )
+    
+    def _empty_psychological_analysis(self) -> PsychologicalAnalysis:
+        return PsychologicalAnalysis(
+            manipulative_index=0,
+            triggers={'fear': 0, 'greed': 0, 'urgency': 0},
+            body_word_count=0,
+            verdict='Unable to analyze'
+        )
     
     def _error_result(
         self, 
         url: str, 
         error: str, 
-        start_time: datetime,
-        evidence_log: Optional[List[str]] = None
-    ) -> AnalysisResult:
-        """Generate error result for failed analysis."""
-        if evidence_log is None:
-            evidence_log = []
-        
-        evidence_log.append(f">> ERROR: {error}")
-        duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)
-        
-        return AnalysisResult(
+        start_time: datetime
+    ) -> OmniscientResult:
+        """Generate error result."""
+        domain = urlparse(url).netloc or url
+        return OmniscientResult(
             url=url,
-            truth_score=0,
-            verdict="ERROR",
-            semantic_analysis=SemanticAnalysis(
-                extracted_title="",
-                h1_tags=[],
-                copyright_texts=[],
-                claimed_brands=[],
-                domain=urlparse(url).netloc or url,
-                registrant=None,
-                impersonation_check=f"Error: {error}"
+            domain=domain,
+            risk_score=0,
+            category='ERROR',
+            verdict='ERROR',
+            threat_badges=[],
+            network_intel=NetworkIntel(
+                ip_address=None, geolocation={}, isp=None, asn=None, org=None,
+                open_ports=[], cloud_provider=None, is_bulletproof_host=False, reverse_dns=None
             ),
-            psychological_analysis=PsychologicalAnalysis(
-                manipulative_index=0,
-                triggers={'fear': 0, 'greed': 0, 'urgency': 0},
-                body_word_count=0,
-                verdict="Unable to analyze"
+            temporal_analysis=TemporalAnalysis(
+                wayback_first_seen=None, wayback_last_seen=None, wayback_snapshot_count=0,
+                wayback_snapshots=[], domain_age_days=None, domain_created=None,
+                temporal_anomaly=None, history_fabrication=False
             ),
-            domain_consistency=DomainConsistency(
-                creation_date=None,
-                copyright_years=[],
-                anomaly=None,
-                age_days=None
-            ),
-            evidence_log=evidence_log,
+            content_classification=self._empty_content_classification(),
+            cognitive_analysis=self._empty_cognitive_analysis(domain),
+            psychological_analysis=self._empty_psychological_analysis(),
+            evidence_log=[f">> ERROR: {error}"],
             timestamp=datetime.now(timezone.utc).isoformat(),
-            analysis_duration_ms=duration_ms
+            analysis_duration_ms=int((datetime.now() - start_time).total_seconds() * 1000)
         )
 
 
-# Singleton analyzer instance
-_analyzer: Optional[NetSentinelAnalyzer] = None
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONVENIENCE FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
 
+_analyzer: Optional[OmniscientAnalyzer] = None
 
-def get_analyzer() -> NetSentinelAnalyzer:
-    """Get or create the singleton analyzer."""
+def get_analyzer() -> OmniscientAnalyzer:
     global _analyzer
     if _analyzer is None:
-        _analyzer = NetSentinelAnalyzer()
+        _analyzer = OmniscientAnalyzer()
     return _analyzer
 
+async def analyze_url_async(url: str) -> OmniscientResult:
+    return await get_analyzer().analyze_url(url)
 
-async def analyze_url_async(url: str) -> AnalysisResult:
-    """Convenience function for single URL analysis."""
-    analyzer = get_analyzer()
-    return await analyzer.analyze_url(url)
-
-
-async def analyze_batch_async(urls: List[str]) -> List[AnalysisResult]:
-    """Analyze multiple URLs concurrently."""
-    analyzer = get_analyzer()
-    results = []
-    async for result in analyzer.analyze_urls(urls):
-        results.append(result)
-    return results
-
-
-def analyze_url(url: str) -> AnalysisResult:
-    """Synchronous wrapper for URL analysis."""
+def analyze_url(url: str) -> OmniscientResult:
     return asyncio.run(analyze_url_async(url))
 
 
 async def main() -> None:
-    """Demo with sample URLs."""
-    test_urls = [
-        "https://www.google.com",
-        "https://www.paypal.com",
-        "https://example.com",
-    ]
-    
+    """Demo with test URLs."""
     print("=" * 60)
-    print("NetSentinel v5.0 - Cognitive Truth Engine")
-    print("Philosophy: The Truth is in the Context, not the Ports.")
+    print("NetSentinel v6.0 - THE OMNISCIENT EDITION")
     print("=" * 60)
     
-    analyzer = NetSentinelAnalyzer()
+    analyzer = OmniscientAnalyzer()
+    result = await analyzer.analyze_url("https://example.com")
     
-    async for result in analyzer.analyze_urls(test_urls):
-        print(f"\n{'─' * 50}")
-        print(f"URL: {result['url']}")
-        print(f"Truth Score: {result['truth_score']}/100")
-        print(f"Verdict: {result['verdict']}")
-        print(f"Duration: {result['analysis_duration_ms']}ms")
-        print(f"\nEvidence Log:")
-        for log in result['evidence_log']:
-            print(f"  {log}")
+    print(f"\nTarget: {result['url']}")
+    print(f"Risk Score: {result['risk_score']}/100")
+    print(f"Category: {result['category']}")
+    print(f"Verdict: {result['verdict']}")
+    print(f"Threat Badges: {result['threat_badges']}")
+    print(f"\nEvidence Log:")
+    for log in result['evidence_log']:
+        print(f"  {log}")
 
 
 if __name__ == '__main__':
