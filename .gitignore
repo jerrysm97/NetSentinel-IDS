@@ -8,15 +8,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyc
 
 # Logs
 logs/*.log
+*.log
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*.iml
 
 # OS
 .DS_Store
@@ -34,3 +37,15 @@ instance/
 # Testing
 verify_v75.py
 logs/test_alerts.json
+
+# APK/IPA
+*.apk
+*.ipa
+
+# Runtime data (generated at runtime, not source code)
+targets.json
+footprint_db.json
+passive_stats.json
+traffic_stats.json
+capture.pcap
+*.pcap
