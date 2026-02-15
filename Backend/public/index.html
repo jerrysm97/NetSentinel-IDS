@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL — Network Warfare Suite</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
     <style>
         :root {
             --bg-dark: #0a0a0f;
@@ -1355,6 +1357,15 @@
         <div class="nav-item" id="nav-targets" onclick="switchTab('targets')">
             <span class="icon">🎯</span> Targets
         </div>
+        <div class="nav-item" id="nav-history" onclick="switchTab('history')">
+            <span class="icon">📜</span> Scan History
+        </div>
+        <div class="nav-item" id="nav-topology" onclick="switchTab('topology')">
+            <span class="icon">🕸️</span> Topology
+        </div>
+        <div class="nav-item" id="nav-attack" onclick="switchTab('attack')">
+            <span class="icon">💀</span> Attack Lab
+        </div>
 
         <div class="nav-section">TOOLS</div>
         <div class="nav-item" id="nav-nmap" onclick="switchTab('nmap')">
@@ -1460,6 +1471,31 @@
             <div class="device-grid" id="deviceGrid">
                 <div class="empty-state">Scan the network to detect devices...</div>
             </div>
+        </div>
+
+        <!-- ═══ VIEW: HISTORY ═══ -->
+        <div id="view-history" class="view-section">
+            <div class="section-title">
+                <span>📜 SCAN HISTORY</span>
+                <button class="btn btn-secondary" onclick="loadScanHistory()">
+                    <span class="icon">🔄</span> REFRESH
+                </button>
+            </div>
+            <div id="historyResults" style="display:grid;gap:10px;">
+                <div class="empty-state">Loading history...</div>
+            </div>
+        </div>
+
+        <!-- ═══ VIEW: TOPOLOGY ═══ -->
+        <div id="view-topology" class="view-section" style="height:100%;display:none;flex-direction:column;">
+            <div class="section-title">
+                <span>🕸️ NETWORK TOPOLOGY</span>
+                <button class="btn btn-secondary" onclick="renderTopology()">
+                    <span class="icon">🔄</span> RELOAD
+                </button>
+            </div>
+            <div id="cy"
+                style="flex:1;background:rgba(0,0,0,0.2);border-radius:10px;margin-bottom:20px;min-height:400px;"></div>
         </div>
 
         <!-- ═══ VIEW: WIFI SCANNER ═══ -->
@@ -1690,6 +1726,57 @@
                 <div id="activityLog"></div>
             </div>
         </div>
+
+        <div id="view-attack" class="view-section">
+            <div class="card" style="height:calc(100vh - 140px);overflow-y:auto;">
+                <div class="card-header">
+                    <h3>💀 ADVANCED ATTACK LAB (MITM)</h3>
+                    <span class="badge danger">OFFENSIVE MODE</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                    <div>
+                        <div class="form-group">
+                            <label>TARGET IP</label>
+                            <input type="text" id="attackTarget" placeholder="e.g. 192.168.1.15">
+                        </div>
+                        <div class="form-group">
+                            <label>GATEWAY IP</label>
+                            <input type="text" id="attackGateway" placeholder="e.g. 192.168.1.1">
+                        </div>
+                        <div class="form-group">
+                            <label>ATTACK MODE</label>
+                            <select id="attackMode">
+                                <option value="all">ALL (ARP + DNS + Sniff)</option>
+                                <option value="arp">ARP Spoofing Only</option>
+                                <option value="dns">DNS Spoofing Only</option>
+                                <option value="sniff">Passive Sniffer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label>SPOOFED DOMAINS (Comma separated)</label>
+                            <input type="text" id="attackDomains" value="google.com,facebook.com,twitter.com">
+                            <small style="color:var(--text-muted);display:block;margin-top:5px;">Redirects to internal
+                                Fake Server</small>
+                        </div>
+
+                        <div style="margin-top:20px;display:flex;gap:10px;">
+                            <button class="btn btn-danger" onclick="startAttack()"
+                                style="flex:1;padding:15px;font-size:16px;">🚀 LAUNCH ATTACK</button>
+                            <button class="btn btn-secondary" onclick="stopAttack()"
+                                style="flex:1;padding:15px;font-size:16px;">🛑 STOP ATTACK</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-box" id="attackConsole"
+                    style="height:300px;overflow-y:auto;font-family:monospace;white-space:pre-wrap;">
+                    [SYSTEM] Attack Lab initialized. Ready to intercept...
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL -->
@@ -1734,7 +1821,7 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=6.2.1"></script>
 </body>
 
 </html>

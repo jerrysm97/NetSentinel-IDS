@@ -1,0 +1,15 @@
+{
+  "status": "success",
+  "scan_mode": "passive",
+  "methods": [],
+  "subnet": "unknown",
+  "count": 0,
+  "devices": [],
+  "is_root": false,
+  "database": {
+    "saved": 0,
+    "total_logged": 324,
+    "error": null
+  },
+  "timestamp": "2026-02-17T14:12:20.505Z"
+}

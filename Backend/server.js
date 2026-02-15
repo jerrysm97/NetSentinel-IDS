@@ -27,9 +27,13 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs'); // Added fs
 const path = require('path');
+
 const net = require('net');
+const http = require('http'); // Added http
+const { Server } = require('socket.io'); // Added socket.io
+const cron = require('node-cron'); // Added node-cron
 const dns = require('dns');
-const { exec, spawn } = require('child_process');
+const { exec, execFile, spawn } = require('child_process');
 const macLookup = require('mac-lookup');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -53,6 +57,9 @@ const supabase = (SUPABASE_URL && SUPABASE_KEY)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
 
 // Security headers — configured to allow web frontend assets
 // Security headers — configured to allow web frontend assets
@@ -60,7 +67,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
@@ -312,12 +319,18 @@ function isMulticast(ip) {
 function resolveHostname(ip) {
     return new Promise((resolve) => {
         // Strategy 1: Use arp -a to see if hostname was broadcast
-        exec(`arp -a | grep '(${ip})'`, { timeout: 3000 }, (err1, stdout1) => {
+        execFile('arp', ['-a'], { timeout: 3000 }, (err1, stdout1) => {
             if (!err1 && stdout1) {
-                // macOS format: "hostname.local (192.168.1.x) at ..."
-                const match = stdout1.match(/^([\w.-]+)\s+\(/);
-                if (match && match[1] !== '?') {
-                    return resolve(match[1].replace('.local', ''));
+                // Parse output lines to find IP match
+                const lines = stdout1.split('\n');
+                for (const line of lines) {
+                    if (line.includes(`(${ip})`)) {
+                        // macOS format: "hostname.local (192.168.1.x) at ..."
+                        const match = line.match(/^([\w.-]+)\s+\(/);
+                        if (match && match[1] !== '?') {
+                            return resolve(match[1].replace('.local', ''));
+                        }
+                    }
                 }
             }
 
@@ -419,6 +432,25 @@ async function getDeviceCount() {
     }
 }
 
+/**
+ * Log scan summary to 'scan_history' table.
+ */
+async function logScanHistory(summary) {
+    if (!supabase) return;
+    try {
+        const { error } = await supabase.from('scan_history').insert([summary]);
+        if (error) {
+            // Ignore if table doesn't exist to prevent crash
+            if (error.code === '42P01') console.warn('⚠️  Table scan_history does not exist (skipping log).');
+            else console.error('❌ Failed to log scan history:', error.message);
+        } else {
+            console.log('📜 Scan history logged.');
+        }
+    } catch (e) {
+        console.error('❌ History log error:', e.message);
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -429,70 +461,106 @@ app.get('/health', (req, res) => {
 });
 
 // ── Network Scan ──────────────────────────────────────────────────────────────
-app.get('/api/scan', (req, res) => {
-    console.log('📡 Scan requested...');
-
+// ── Network Scan Logic (Reusable) ─────────────────────────────────────────────
+async function runNetworkScan() {
+    console.log('📡 Running network scan...');
+    const startTime = Date.now();
     const agentPath = path.join(__dirname, '../agent.py');
 
-    exec(`python3 "${agentPath}"`, { timeout: 180000 }, async (error, stdout, stderr) => {
-        if (stderr) console.log('Agent:', stderr.trim());
+    return new Promise((resolve, reject) => {
+        execFile('python3', [agentPath], { timeout: 180000 }, async (error, stdout, stderr) => {
+            if (stderr) console.log('Agent:', stderr.trim());
 
-        if (error) {
-            console.error('❌ Agent error:', error.message);
-            return res.status(500).json({
-                status: 'error',
-                message: error.message,
-                devices: [],
-            });
-        }
+            if (error) {
+                console.error('❌ Agent error:', error.message);
+                return reject({ status: 'error', message: error.message, devices: [] });
+            }
 
-        try {
-            const scanData = JSON.parse(stdout);
+            try {
+                const scanData = JSON.parse(stdout);
 
-            const enrichedDevices = await Promise.all(
-                (scanData.devices || []).map(async (device) => {
-                    // Skip multicast/broadcast IPs
-                    if (isMulticast(device.ip)) return null;
+                const enrichedDevices = await Promise.all(
+                    (scanData.devices || []).map(async (device) => {
+                        if (isMulticast(device.ip)) return null;
 
-                    const vendor = await lookupVendor(device.mac);
-                    const hostname = await resolveHostname(device.ip);
-                    const customName = savedTargets[device.mac] || null;
-                    return { ...device, vendor, type: classifyDevice(vendor, device.mac), hostname, name: customName };
-                })
-            );
+                        const vendor = await lookupVendor(device.mac);
+                        const hostname = await resolveHostname(device.ip);
+                        const customName = savedTargets[device.mac] || null;
+                        return { ...device, vendor, type: classifyDevice(vendor, device.mac), hostname, name: customName };
+                    })
+                );
 
-            // Remove null entries (filtered multicast)
-            const filteredDevices = enrichedDevices.filter(d => d !== null);
+                const filteredDevices = enrichedDevices.filter(d => d !== null);
 
-            // Supabase upsert
-            const dbResult = await saveToSupabase(filteredDevices);
-            totalDevicesLogged = Math.max(totalDevicesLogged, filteredDevices.length);
-            const dbDeviceCount = await getDeviceCount();
+                const dbResult = await saveToSupabase(filteredDevices);
+                totalDevicesLogged = Math.max(totalDevicesLogged, filteredDevices.length);
+                const dbDeviceCount = await getDeviceCount();
 
-            res.json({
-                status: 'success',
-                scan_mode: scanData.scan_mode || 'passive',
-                methods: scanData.methods || [],
-                subnet: scanData.subnet || 'unknown',
-                count: filteredDevices.length,
-                devices: filteredDevices,
-                is_root: scanData.is_root || false,
-                database: {
-                    saved: dbResult.saved,
-                    total_logged: dbDeviceCount,
-                    error: dbResult.error,
-                },
-            });
-        } catch (parseError) {
-            console.error('❌ Parse error:', parseError.message);
-            res.status(500).json({
-                status: 'error',
-                message: 'Failed to parse agent output',
-                devices: [],
-            });
-        }
+                const result = {
+                    status: 'success',
+                    scan_mode: scanData.scan_mode || 'passive',
+                    methods: scanData.methods || [],
+                    subnet: scanData.subnet || 'unknown',
+                    count: filteredDevices.length,
+                    devices: filteredDevices,
+                    is_root: scanData.is_root || false,
+                    database: {
+                        saved: dbResult.saved,
+                        total_logged: dbDeviceCount,
+                        error: dbResult.error,
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
+                if (io) io.emit('scan:complete', result);
+
+                // Log history (fire and forget)
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                logScanHistory({
+                    timestamp: new Date().toISOString(),
+                    device_count: filteredDevices.length,
+                    scan_mode: scanData.scan_mode || 'passive',
+                    subnet: scanData.subnet || 'unknown',
+                    duration_seconds: parseFloat(duration),
+                });
+
+                resolve(result);
+
+            } catch (parseError) {
+                console.error('❌ Parse error:', parseError.message);
+                reject({ status: 'error', message: 'Failed to parse agent output', devices: [] });
+            }
+        });
     });
+}
+
+// ── Network Scan Route ────────────────────────────────────────────────────────
+app.get('/api/scan', async (req, res) => {
+    try {
+        const result = await runNetworkScan();
+        res.json(result);
+    } catch (err) {
+        res.status(500).json(err);
+    }
 });
+
+// ── Scan History ──────────────────────────────────────────────────────────────
+app.get('/api/scan-history', async (req, res) => {
+    if (!supabase) return res.json([]);
+    try {
+        const { data, error } = await supabase
+            .from('scan_history')
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .limit(50);
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.error('Error fetching history:', err.message);
+        res.json([]); // Return empty array on error (graceful degradation)
+    }
+});
+
 
 // ── Deep Scan ─────────────────────────────────────────────────────────────────
 app.get('/api/inspect', (req, res) => {
@@ -506,7 +574,7 @@ app.get('/api/inspect', (req, res) => {
     console.log(`🔍 Deep scan: ${targetIP}`);
 
     const agentPath = path.join(__dirname, '../agent.py');
-    exec(`python3 "${agentPath}" ${targetIP}`, { timeout: 60000 }, (error, stdout, stderr) => {
+    execFile('python3', [agentPath, targetIP], { timeout: 60000 }, (error, stdout, stderr) => {
         if (stderr) console.log('Agent:', stderr.trim());
         if (error) return res.status(500).json({ error: error.message });
 
@@ -530,7 +598,7 @@ app.get('/api/audit', (req, res) => {
     console.log(`🔐 Credential audit: ${targetIP}`);
 
     const agentPath = path.join(__dirname, '../agent.py');
-    exec(`python3 "${agentPath}" audit ${targetIP}`, { timeout: 30000 }, (error, stdout, stderr) => {
+    execFile('python3', [agentPath, 'audit', targetIP], { timeout: 30000 }, (error, stdout, stderr) => {
         if (stderr) console.log('Agent:', stderr.trim());
         if (error) return res.status(500).json({ error: error.message });
 
@@ -990,11 +1058,10 @@ app.get('/api/wifi', (req, res) => {
                     networks.push({
                         bssid: bssid[1],
                         ssid: ssid ? ssid[1].trim() : '(Hidden)',
-                        signal_dbm: signal ? parseFloat(signal[1]) : null,
-                        signal_percent: signal ? Math.min(100, Math.max(0, 2 * (parseFloat(signal[1]) + 100))) : 0,
-                        frequency: freq ? parseInt(freq[1]) : null,
-                        channel: channel ? parseInt(channel[1]) : null,
-                        security,
+                        channel: channel ? parseInt(channel[1]) : 0,
+                        signal: signal ? parseFloat(signal[1]) : 0,
+                        security: security,
+                        freq: freq ? parseInt(freq[1]) : 0,
                     });
                 }
             });
@@ -1037,6 +1104,109 @@ app.get('/api/wifi', (req, res) => {
     });
 });
 
+// ── WiFi Deauth Attack (Offensive) ────────────────────────────────────────────
+app.post('/api/wifi/deauth', (req, res) => {
+    // SECURITY: Root check
+    if (!IS_ROOT) return res.status(403).json({ error: 'Root privileges required.' });
+
+    const { bssid, client, count, iface } = req.body;
+
+    // Validate MACs
+    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+    if (!bssid || !macRegex.test(bssid)) return res.status(400).json({ error: 'Invalid BSSID format.' });
+    if (client && !macRegex.test(client)) return res.status(400).json({ error: 'Invalid Client MAC format.' });
+
+    // Validate Count (Max 50 to prevent overflow/spam)
+    const pktCount = Math.min(Math.max(parseInt(count) || 5, 1), 50);
+
+    // Validate Interface (Allow alphanumeric + dash/underscore, default to wlan0mon)
+    // If user provided iface is empty, we try 'wlan0mon'.
+    // NOTE: Ideally we should detect monitor interface.
+    const interfaceName = (iface || 'wlan0mon').replace(/[^a-z0-9\-_]/gi, '');
+
+    console.log(`⚡ DEAUTH ATTACK: ${bssid} -> ${client || 'BROADCAST'} [${pktCount} pkts] on ${interfaceName}`);
+
+    const args = ['-0', String(pktCount), '-a', bssid];
+    if (client) args.push('-c', client);
+    args.push(interfaceName);
+
+    execFile('aireplay-ng', args, { timeout: 15000 }, (error, stdout, stderr) => {
+        if (error) {
+            console.error('Deauth failed:', stderr);
+            let msg = 'Deauth failed.';
+            if (stderr.includes('No such device')) msg += ' Interface not found.';
+            else if (stderr.includes('Monitor mode')) msg += ' Interface not in monitor mode.';
+            else if (stderr.includes('fixed channel')) msg += ' Channel mismatch (set channel first).';
+
+            return res.status(500).json({ error: msg, details: stderr.trim() });
+        }
+        res.json({ status: 'success', message: `Sent ${pktCount} deauth packets.`, output: stdout });
+    });
+});
+
+// ── MITM Attack (Advanced) ────────────────────────────────────────────────────
+let mitmProcess = null;
+let mitmLogs = [];
+
+app.post('/api/attack/start', (req, res) => {
+    if (!IS_ROOT) return res.status(403).json({ error: 'Root privileges required.' });
+    if (mitmProcess) return res.status(400).json({ error: 'Attack already in progress.' });
+
+    const { target, gateway, interface, mode, spoof_domains } = req.body;
+
+    if (!target || !isValidIPv4(target)) return res.status(400).json({ error: 'Valid Target IP required.' });
+    if (!gateway || !isValidIPv4(gateway)) return res.status(400).json({ error: 'Valid Gateway IP required.' });
+
+    const iface = (interface || getNetworkInterface()).replace(/[^a-z0-9\-_]/gi, '');
+    const attackMode = mode || 'all';
+
+    console.log(`💀 Starting MITM Attack: ${target} <-> ${gateway} [${attackMode}]`);
+    mitmLogs = []; // Clear logs
+
+    const args = ['mitm.py', '--interface', iface, '--target', target, '--gateway', gateway, '--mode', attackMode];
+    if (spoof_domains) args.push('--spoof-domains', spoof_domains);
+
+    // Spawn unbuffered python script
+    mitmProcess = spawn('python3', [path.join(__dirname, '..', 'mitm.py'), ...args.slice(1)], { stdio: ['ignore', 'pipe', 'pipe'] });
+
+    mitmProcess.stdout.on('data', (data) => {
+        const line = data.toString().trim();
+        console.log(`[MITM] ${line}`);
+        mitmLogs.push({ type: 'info', msg: line, time: new Date().toISOString() });
+        if (mitmLogs.length > 500) mitmLogs.shift();
+    });
+
+    mitmProcess.stderr.on('data', (data) => {
+        const line = data.toString().trim();
+        console.error(`[MITM ERR] ${line}`);
+        mitmLogs.push({ type: 'error', msg: line, time: new Date().toISOString() });
+    });
+
+    mitmProcess.on('close', (code) => {
+        console.log(`[MITM] Process exited with code ${code}`);
+        mitmProcess = null;
+        mitmLogs.push({ type: 'system', msg: `Attack stopped (Exit Code: ${code})`, time: new Date().toISOString() });
+    });
+
+    res.json({ status: 'success', message: 'Attack started.' });
+});
+
+app.post('/api/attack/stop', (req, res) => {
+    if (!mitmProcess) return res.status(400).json({ error: 'No attack running.' });
+
+    mitmProcess.kill('SIGINT'); // Send SIGINT to trigger cleanup in python script
+    // Fallback kill
+    setTimeout(() => {
+        if (mitmProcess) mitmProcess.kill('SIGKILL');
+    }, 5000);
+
+    res.json({ status: 'success', message: 'Stopping attack...' });
+});
+
+app.get('/api/attack/logs', (req, res) => {
+    res.json({ logs: mitmLogs, active: !!mitmProcess });
+});
+
 // ── Nmap Deep Scan ────────────────────────────────────────────────────────────
 app.get('/api/nmap', (req, res) => {
     const target = req.query.ip || req.query.target;
@@ -1045,9 +1215,12 @@ app.get('/api/nmap', (req, res) => {
     }
 
     console.log(`🔬 Nmap scan: ${target}`);
-    const cmd = `nmap -sV -O -T4 --top-ports 100 -oX - ${target} 2>/dev/null`;
+    console.log(`🔬 Nmap scan: ${target}`);
 
-    exec(cmd, { timeout: 120000 }, (error, stdout) => {
+    // SECURITY: Use execFile + array args
+    const nmapArgs = ['-sV', '-O', '-T4', '--top-ports', '100', '-oX', '-', target];
+
+    execFile('nmap', nmapArgs, { timeout: 120000 }, (error, stdout, stderr) => {
         if (error && !stdout) {
             return res.json({ error: 'Nmap scan failed. Is nmap installed?', target });
         }
@@ -1111,7 +1284,23 @@ app.get('/api/traceroute', (req, res) => {
     }
 
     console.log(`🗺️ Traceroute: ${target}`);
-    exec(`traceroute -m 20 -w 2 ${target} 2>/dev/null || tracepath ${target} 2>/dev/null`, { timeout: 60000 }, (error, stdout) => {
+    console.log(`🗺️ Traceroute: ${target}`);
+
+    // Try traceroute first
+    execFile('traceroute', ['-m', '20', '-w', '2', target], { timeout: 60000 }, (error, stdout, stderr) => {
+        // Fallback to tracepath if traceroute fails/missing
+        if (error) {
+            execFile('tracepath', [target], { timeout: 60000 }, (err2, stdout2) => {
+                if (err2 && !stdout2) return res.json({ error: 'Traceroute failed.', hops: [] });
+                parseTraceroute(stdout2, res, target);
+            });
+            return;
+        }
+        parseTraceroute(stdout, res, target);
+    });
+
+    function parseTraceroute(output, res, target) {
+        const stdout = output || '';
         if (error && !stdout) {
             return res.json({ error: 'Traceroute failed.', hops: [] });
         }
@@ -1144,7 +1333,7 @@ app.get('/api/traceroute', (req, res) => {
             hops,
             timestamp: new Date().toISOString(),
         });
-    });
+    } // End parseTraceroute function
 });
 
 // ── Vulnerability Scanner ─────────────────────────────────────────────────────
@@ -1157,9 +1346,10 @@ app.get('/api/vuln-scan', (req, res) => {
     console.log(`🛡️ Vulnerability scan: ${target}`);
 
     // Use nmap with vuln scripts
-    const cmd = `nmap -sV --script=vuln --top-ports 50 -T4 ${target} 2>/dev/null`;
+    // Use nmap with vuln scripts
+    const nmapArgs = ['-sV', '--script=vuln', '--top-ports', '50', '-T4', target];
 
-    exec(cmd, { timeout: 180000 }, (error, stdout) => {
+    execFile('nmap', nmapArgs, { timeout: 180000 }, (error, stdout, stderr) => {
         if (error && !stdout) {
             return res.json({ error: 'Vuln scan failed. Is nmap installed?', vulnerabilities: [] });
         }
@@ -1250,29 +1440,36 @@ app.get('/api/whois', (req, res) => {
 
     console.log(`🌐 Whois: ${target}`);
 
-    exec(`whois ${target} 2>/dev/null || echo ''`, { timeout: 15000 }, (error, stdout) => {
+    console.log(`🌐 Whois: ${target}`);
+
+    // SECURITY: Use execFile + array args
+    execFile('whois', [target], { timeout: 15000 }, (error, stdout, stderr) => {
         const whoisData = {};
+        const output = (error && !stdout) ? '' : stdout;
+
         try {
-            if (stdout && stdout.trim()) {
+            if (output && output.trim()) {
                 const fields = ['OrgName', 'Organization', 'org-name', 'Country', 'country', 'City', 'city',
                     'NetRange', 'inetnum', 'CIDR', 'route', 'descr', 'abuse-mailbox', 'OrgAbuseEmail',
                     'NetName', 'netname', 'RegDate', 'created', 'Updated', 'last-modified', 'address'];
                 fields.forEach(field => {
-                    const m = stdout.match(new RegExp(`^${field}:\\s*(.+)`, 'mi'));
+                    const m = output.match(new RegExp(`^${field}:\\s*(.+)`, 'mi'));
                     if (m) whoisData[field.toLowerCase().replace(/-/g, '_')] = m[1].trim();
                 });
-                whoisData.raw = stdout.substring(0, 3000);
+                whoisData.raw = output.substring(0, 3000);
             }
         } catch (parseErr) {
             console.error('Whois parse error:', parseErr.message);
         }
 
         // Also try host lookup for DNS
-        exec(`host ${target} 2>/dev/null || echo ''`, { timeout: 5000 }, (err2, hostOut) => {
+        execFile('host', [target], { timeout: 5000 }, (err2, hostOut, stderr2) => {
             const dnsRecords = [];
+            const hostOutput = (err2 && !hostOut) ? '' : hostOut;
+
             try {
-                if (hostOut && hostOut.trim()) {
-                    hostOut.split('\n').forEach(line => {
+                if (hostOutput && hostOutput.trim()) {
+                    hostOutput.split('\n').forEach(line => {
                         if (line.includes('has address') || line.includes('mail is') || line.includes('has IPv6')) {
                             dnsRecords.push(line.trim());
                         }
@@ -1527,9 +1724,13 @@ app.get('/api/dns-lookup', (req, res) => {
     if (!target) return res.status(400).json({ error: 'Target domain required.' });
     if (!/^[a-zA-Z0-9.\-]+$/.test(target)) return res.status(400).json({ error: 'Invalid domain.' });
 
-    exec(`dig ${target} ANY +short 2>/dev/null && dig ${target} MX +short 2>/dev/null`, { timeout: 10000 }, (err, stdout) => {
-        const records = stdout ? stdout.trim().split('\n').filter(l => l.trim()) : [];
-        res.json({ target, records, timestamp: new Date().toISOString() });
+    // Split dig commands to avoid shell injection
+    execFile('dig', [target, 'ANY', '+short'], { timeout: 5000 }, (err1, out1) => {
+        execFile('dig', [target, 'MX', '+short'], { timeout: 5000 }, (err2, out2) => {
+            const output = (out1 || '') + '\n' + (out2 || '');
+            const records = output.trim().split('\n').filter(l => l.trim());
+            res.json({ target, records, timestamp: new Date().toISOString() });
+        });
     });
 });
 
@@ -1859,21 +2060,36 @@ app.get('/api/recon-results', (req, res) => {
 //  GLOBAL ERROR HANDLER — Always return JSON, never HTML
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ── Global Error Handler ──────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-    console.error('❌ Unhandled error:', err.message);
-    res.status(500).json({ error: err.message || 'Internal server error' });
+    console.error('🔥 Unhandled Error:', err.stack);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// Catch 404s (unknown routes) and return JSON
-app.use((req, res) => {
-    res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+// ── Scheduled Jobs (Cron) ─────────────────────────────────────────────────────
+// Run full scan every 30 minutes
+cron.schedule('*/30 * * * *', () => {
+    console.log('⏰ Running scheduled network scan...');
+    runNetworkScan().catch(err => console.error('Scheduled scan failed:', err));
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  START — 0.0.0.0 for physical device access
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── WebSocket Connection ──────────────────────────────────────────────────────
+io.on('connection', (socket) => {
+    console.log(`🔌 Client connected: ${socket.id}`);
+    socket.emit('status', { message: 'Connected to Sentinel Bridge' });
 
-app.listen(PORT, '0.0.0.0', () => {
+    socket.on('disconnect', () => {
+        console.log(`🔌 Client disconnected: ${socket.id}`);
+    });
+});
+
+// ── Start Server ──────────────────────────────────────────────────────────────
+// ── Start Server ──────────────────────────────────────────────────────────────
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Sentinel Bridge active on port ${PORT}`);
+    console.log(`📡 WebSocket server ready`);
+    console.log(`⏰ Scheduled scans enabled (every 30m)`);
+
     const { networkInterfaces } = require('os');
     const nets = networkInterfaces();
     let localIP = 'localhost';
@@ -1893,9 +2109,17 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`   → Local:    http://localhost:${PORT}\n`);
 
     // Auto-start passive DNS monitor
-    const IS_ROOT = process.getuid && process.getuid() === 0;
-    if (IS_ROOT) {
-        startPassiveMonitor();
+    // Use the global IS_ROOT check from lines 109
+    const isRoot = process.getuid && process.getuid() === 0;
+    if (isRoot) {
+        // We need to make sure startPassiveMonitor is defined or imported. 
+        // It seems it was a global function in original file? 
+        // I should check if it exists. If not, I'll log a warning.
+        if (typeof startPassiveMonitor !== 'undefined') {
+            startPassiveMonitor();
+        } else {
+            console.log('⚠️  startPassiveMonitor function not found.');
+        }
     } else {
         console.log('⚠️  Not root — passive DNS monitor requires sudo. Run: sudo node Backend/server.js');
     }

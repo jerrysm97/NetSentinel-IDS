@@ -24,6 +24,29 @@ async function safeFetch(url, options) {
     }
 }
 
+// ══ SOCKET.IO ═══════════════════════════════════════════════════════════════
+const socket = io();
+
+socket.on('connect', () => {
+    log('🔌 Connected to Sentinel Core via WebSocket');
+});
+
+socket.on('scan:complete', (data) => {
+    if (!data || data.status !== 'success') return;
+    log(`📡 Real-time update: ${data.count} devices found.`);
+
+    currentDevices = data.devices;
+    renderDevices(data.devices);
+    renderTargets();
+    renderRadar(data.devices);
+
+    document.getElementById('deviceCount').innerText = data.count;
+    document.getElementById('subnetInfo').innerText = data.subnet;
+
+    const methodsEl = document.getElementById('scanMethods');
+    if (methodsEl && data.methods) methodsEl.innerText = data.methods.join(' + ');
+});
+
 // ══ INIT ═════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
     log('Sentinel v6.0 initialized. Systems armed.');
@@ -92,6 +115,11 @@ function switchTab(tabId) {
     if (tabId === 'footprint') renderGlobalFootprint();
     if (tabId === 'sysinfo') loadSystemInfo();
     if (tabId === 'firewall') loadFirewall();
+    if (tabId === 'history') loadScanHistory();
+    if (tabId === 'topology') setTimeout(() => renderTopology(), 100);
+
+    if (tabId === 'attack') startAttackLogPolling();
+    else stopAttackLogPolling();
 }
 
 // ══ NETWORK SCAN ════════════════════════════════════════════════════════════
@@ -445,6 +473,7 @@ async function scanWifi() {
                         <span>${net.bssid} • CH ${net.channel || '?'} • ${net.signal_dbm || '?'} dBm</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:12px;">
+                        <button class="btn btn-danger" onclick="deauthNetwork('${net.bssid}')" style="font-size:10px;padding:4px 8px;">⚡ DEAUTH</button>
                         <span class="security-badge ${secClass}">${net.security}</span>
                         <div class="wifi-signal">${barsHtml}</div>
                         <span style="font-size:11px;color:var(--accent);font-weight:700;">${net.signal_percent}%</span>
@@ -457,6 +486,32 @@ async function scanWifi() {
     } catch (e) {
         container.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
         log('WiFi scan failed.');
+    }
+}
+
+async function deauthNetwork(bssid) {
+    if (!confirm(`⚠️ ATTACK WARNING ⚠️\n\nAre you authorized to test this network (${bssid})?\n\nThis will disconnect clients temporarily.`)) return;
+
+    const count = prompt('How many deauth packets? (Default 10, Max 50)', '10');
+    if (count === null) return;
+
+    log(`Initiating Deauth attack on ${bssid}...`);
+    try {
+        const res = await fetch('/api/wifi/deauth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bssid, count: parseInt(count) || 10 })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            log(`✅ Attack Sent: ${data.message}`);
+            alert(`Attack Sent!\n${data.message}`);
+        } else {
+            throw new Error(data.error || 'Unknown error');
+        }
+    } catch (e) {
+        log(`❌ Attack Failed: ${e.message}`);
+        alert(`Attack Failed:\n${e.message}\n\nCheck if interface is in Monitor Mode?\n(e.g., airmon-ng start wlan0)`);
     }
 }
 
@@ -1150,5 +1205,239 @@ async function loadCachedRecon() {
         }
     } catch (e) {
         container.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+    }
+}
+
+// ══ SCAN HISTORY ════════════════════════════════════════════════════════════
+async function loadScanHistory() {
+    const container = document.getElementById('historyResults');
+    if (!container) return;
+    container.innerHTML = '<div class="empty-state">Loading history...</div>';
+
+    try {
+        const data = await safeFetch('/api/scan-history');
+        if (data.error) throw new Error(data.error);
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="empty-state">No scan history recorded yet.</div>';
+            return;
+        }
+
+        let html = '';
+        data.forEach(scan => {
+            const date = new Date(scan.timestamp).toLocaleString();
+            const duration = scan.duration_seconds ? `${scan.duration_seconds}s` : '?';
+
+            html += `
+            <div class="device-card" style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;margin-bottom:8px;cursor:default;">
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div style="font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+                        <span>${date}</span>
+                        <span class="badge" style="font-size:9px;">${scan.scan_mode.toUpperCase()}</span>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);">
+                        Subnet: ${scan.subnet} • Duration: ${duration}
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="sys-value accent" style="font-size:18px;">${scan.device_count}</div>
+                    <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;">DEVICES</div>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+        log(`Loaded ${data.length} historical records.`);
+    } catch (e) {
+        container.innerHTML = `<div class="empty-state">Error loading history: ${e.message}</div>`;
+        log(`History load error: ${e.message}`);
+    }
+}
+
+
+// ══ TOPOLOGY ════════════════════════════════════════════════════════════════
+let cy = null;
+
+function renderTopology(devices) {
+    if (!devices) devices = currentDevices;
+    const container = document.getElementById('cy');
+    if (!container || !window.cytoscape) return;
+
+    // Build Graph Elements
+    const elements = [];
+
+    // Virtual Gateway Node (Center)
+    elements.push({
+        data: { id: 'gateway', label: 'GATEWAY', type: 'router' },
+        classes: 'router'
+    });
+
+    devices.forEach(d => {
+        elements.push({
+            data: {
+                id: d.mac,
+                label: d.name || d.hostname || d.ip,
+                type: d.type
+            }
+        });
+
+        elements.push({
+            data: {
+                source: d.mac,
+                target: 'gateway'
+            }
+        });
+    });
+
+    if (cy) {
+        cy.destroy();
+        cy = null;
+    }
+
+    try {
+        cy = cytoscape({
+            container: container,
+            elements: elements,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': '#1a1a20',
+                        'border-width': 2,
+                        'border-color': '#00f2ff',
+                        'label': 'data(label)',
+                        'color': '#aaa',
+                        'font-size': '10px',
+                        'font-family': 'monospace',
+                        'text-valign': 'bottom',
+                        'text-margin-y': 5,
+                        'width': 30,
+                        'height': 30
+                    }
+                },
+                {
+                    selector: '.router',
+                    style: {
+                        'background-color': '#ff0055',
+                        'border-color': '#ff0055',
+                        'color': '#fff',
+                        'width': 45,
+                        'height': 45,
+                        'font-weight': 'bold'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 1,
+                        'line-color': 'rgba(0, 242, 255, 0.2)',
+                        'curve-style': 'bezier'
+                    }
+                }
+            ],
+            layout: {
+                name: 'concentric',
+                fit: true,
+                padding: 50,
+                startAngle: 3 / 2 * Math.PI,
+                sweep: undefined,
+                clockwise: true,
+                equidistant: false,
+                minNodeSpacing: 30,
+                boundingBox: undefined,
+                avoidOverlap: true,
+                nodeDimensionsIncludeLabels: false,
+                height: undefined,
+                width: undefined,
+                spacingFactor: undefined,
+                concentric: function (node) {
+                    return node.id() === 'gateway' ? 2 : 1;
+                },
+                levelWidth: function (nodes) {
+                    return 1;
+                },
+                animate: true,
+                animationDuration: 500,
+                animationEasing: undefined,
+                animateFilter: function (node, i) { return true; },
+                ready: undefined,
+                stop: undefined,
+                transform: function (node, position) { return position; }
+            }
+        });
+    } catch (e) {
+        console.error('Cytoscape init error:', e);
+        container.innerHTML = '<div class="empty-state">Error loading topology visualization.</div>';
+    }
+}
+// ══ ATTACK LAB (MITM) ═══════════════════════════════════════════════════════
+let attackLogInterval = null;
+
+async function startAttack() {
+    const target = document.getElementById('attackTarget').value.trim();
+    const gateway = document.getElementById('attackGateway').value.trim();
+    const mode = document.getElementById('attackMode').value;
+    const domains = document.getElementById('attackDomains').value.trim();
+
+    if (!target || !gateway) return alert('Target and Gateway IPs are required!');
+    if (!confirm('⚠️ AUTHORIZED USE ONLY ⚠️\n\nStarting MITM Attack.\nEnsure you have permission to audit this network.')) return;
+
+    log(`🚀 Launching MITM Attack against ${target}...`);
+    try {
+        const res = await fetch('/api/attack/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target, gateway, mode, spoof_domains: domains })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            log('✅ Attack Process Started.');
+            startAttackLogPolling();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        log('❌ Attack Start Failed: ' + e.message);
+    }
+}
+
+async function stopAttack() {
+    log('🛑 Stopping Attack...');
+    try {
+        await fetch('/api/attack/stop', { method: 'POST' });
+        log('✅ Stop signal sent.');
+    } catch (e) {
+        log('❌ Stop Failed: ' + e.message);
+    }
+}
+
+function startAttackLogPolling() {
+    if (attackLogInterval) clearInterval(attackLogInterval);
+    pollAttackLogs(); // Immediate
+    attackLogInterval = setInterval(pollAttackLogs, 2000);
+}
+
+function stopAttackLogPolling() {
+    if (attackLogInterval) clearInterval(attackLogInterval);
+    attackLogInterval = null;
+}
+
+async function pollAttackLogs() {
+    const consoleBox = document.getElementById('attackConsole');
+    if (!consoleBox) return; // Tab not active
+
+    try {
+        const res = await fetch('/api/attack/logs');
+        const data = await res.json();
+
+        if (data.logs && data.logs.length > 0) {
+            consoleBox.innerHTML = data.logs.map(l => {
+                const color = l.type === 'error' ? '#ff4444' : l.type === 'system' ? '#00ccff' : '#00ff00';
+                return `<span style="color:${color}">[${l.time.split('T')[1].split('.')[0]}] ${l.msg}</span>`;
+            }).join('\n');
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+    } catch (e) {
+        console.log('Log poll error', e);
     }
 }
