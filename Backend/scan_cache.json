@@ -1,15 +1,128 @@
 {
   "status": "success",
-  "scan_mode": "passive",
-  "methods": [],
-  "subnet": "unknown",
-  "count": 0,
-  "devices": [],
-  "is_root": false,
+  "scan_mode": "multi_layer",
+  "methods": [
+    "arp_cache"
+  ],
+  "subnet": "192.168.1",
+  "count": 11,
+  "devices": [
+    {
+      "ip": "192.168.1.82",
+      "mac": "16:9b:07:77:3e:76",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.109878",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.76",
+      "mac": "7e:64:19:98:c9:65",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110035",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.77",
+      "mac": "16:02:52:80:4f:e1",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110041",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.79",
+      "mac": "c2:d5:2b:2e:47:01",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110044",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.64.1",
+      "mac": "b2:be:83:f3:17:64",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110046",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": "sujal"
+    },
+    {
+      "ip": "192.168.1.74",
+      "mac": "54:fc:f0:99:c1:19",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110047",
+      "type": "Unknown Device",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.70",
+      "mac": "1e:41:03:8f:3a:74",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110049",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.71",
+      "mac": "2e:f4:be:3d:90:88",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110052",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.65",
+      "mac": "06:c7:01:f5:01:7f",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110053",
+      "type": "Privacy-Randomized MAC",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.67",
+      "mac": "04:e5:98:ff:62:21",
+      "discovery_method": "arp_cache+ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110055",
+      "type": "Unknown Device",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    },
+    {
+      "ip": "192.168.1.254",
+      "mac": "5c:8c:30:66:66:7c",
+      "discovery_method": "ip_neigh+proc_arp",
+      "last_seen": "2026-02-17T19:30:40.110057",
+      "type": "Unknown Device",
+      "vendor": "Unknown",
+      "hostname": "Unknown",
+      "name": null
+    }
+  ],
+  "is_root": true,
   "database": {
-    "saved": 0,
+    "saved": 11,
     "total_logged": 324,
     "error": null
   },
-  "timestamp": "2026-02-17T14:12:20.505Z"
+  "timestamp": "2026-02-17T14:00:42.641Z"
 }

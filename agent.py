@@ -58,10 +58,11 @@ class NetworkScanner:
         ("user", "user"), ("admin", "admin123"),
     ]
 
-    def __init__(self):
+    def __init__(self, interface: str = None):
         self._os_type: str = platform.system() or "Linux"
         self._is_root: bool = os.geteuid() == 0 if hasattr(os, 'geteuid') else False
-        self._log(f"🖥️  OS: {self._os_type}  |  Root: {self._is_root}  |  Python: {platform.python_version()}")
+        self.interface = interface or self._get_default_interface()
+        self._log(f"OS: {self._os_type} | Root: {self._is_root} | Interface: {self.interface}")
 
     @staticmethod
     def _log(message: str) -> None:
@@ -70,62 +71,22 @@ class NetworkScanner:
         except Exception:
             pass
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  NETWORK DETECTION
-    # ═══════════════════════════════════════════════════════════════════════════
-
-    def _get_local_ip(self) -> str:
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.settimeout(0)
-            try:
-                sock.connect(("10.254.254.254", 1))
-                local_ip = sock.getsockname()[0]
-            except Exception:
-                local_ip = "127.0.0.1"
-            finally:
-                sock.close()
-
-            if local_ip.startswith("127."):
-                local_ip = self._platform_ip_fallback()
-            return local_ip
-        except Exception:
-            return "127.0.0.1"
-
-    def _platform_ip_fallback(self) -> str:
-        try:
-            if self._os_type == "Linux":
-                output = subprocess.check_output(
-                    ["hostname", "-I"], stderr=subprocess.DEVNULL, timeout=5
-                ).decode().strip()
-                return output.split()[0] if output else "127.0.0.1"
-            elif self._os_type == "Darwin":
-                for iface in ["en0", "en1", "en2"]:
-                    try:
-                        res = subprocess.check_output(
-                            ["ipconfig", "getifaddr", iface],
-                            stderr=subprocess.DEVNULL, timeout=2
-                        ).decode().strip()
-                        if res:
-                            return res
-                    except Exception:
-                        continue
-            elif self._os_type == "Windows":
-                output = subprocess.check_output(
-                    ["ipconfig"], stderr=subprocess.DEVNULL, timeout=10
-                ).decode()
-                match = re.search(r"IPv4 Address[.\s]*:\s*([\d.]+)", output)
-                return match.group(1) if match else "127.0.0.1"
-        except Exception:
-            pass
-        return "127.0.0.1"
-
-    def _get_subnet(self) -> str:
-        ip = self._get_local_ip()
-        return ".".join(ip.split(".")[:3])
-
-    def _get_interface(self) -> str:
+    def _get_default_interface(self) -> str:
         """Auto-detect the active network interface."""
+        # Try to find a WiFi interface first if on Linux
+        if self._os_type == "Linux":
+            try:
+                # Check for wlan0 or similar that has an IP
+                out = subprocess.check_output(
+                    "ip -o -4 addr show | awk '{print $2}'", 
+                    shell=True, stderr=subprocess.DEVNULL
+                ).decode().strip().split('\n')
+                for iface in out:
+                    if iface.startswith('wlan') or iface.startswith('wl'):
+                        return iface
+            except Exception:
+                pass
+
         try:
             # Linux: use `ip route` to find the default interface
             out = subprocess.check_output(
@@ -136,17 +97,48 @@ class NetworkScanner:
                 return out
         except Exception:
             pass
-        # Fallback: check common interfaces
-        for iface in ['wlan0', 'eth0', 'en0', 'wlp2s0', 'enp0s3']:
-            try:
-                subprocess.check_output(
-                    f"ip addr show {iface}", shell=True,
-                    stderr=subprocess.DEVNULL, timeout=3
-                )
-                return iface
-            except Exception:
-                continue
+            
         return 'eth0'
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    #  NETWORK DETECTION
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def _get_local_ip(self) -> str:
+        """Get IP address of the bound interface."""
+        if self.interface:
+            try:
+                if self._os_type == "Linux":
+                    cmd = f"ip -4 addr show {self.interface} | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){{3}}'"
+                    out = subprocess.check_output(cmd, shell=True).decode().strip()
+                    if out: return out.splitlines()[0]
+                elif self._os_type == "Darwin":
+                    out = subprocess.check_output(
+                        ["ipconfig", "getifaddr", self.interface],
+                        stderr=subprocess.DEVNULL
+                    ).decode().strip()
+                    if out: return out
+            except Exception:
+                pass
+
+        # Fallback to connection method
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(0)
+            try:
+                sock.connect(("10.254.254.254", 1))
+                local_ip    = sock.getsockname()[0]
+            except Exception:
+                local_ip = "127.0.0.1"
+            finally:
+                sock.close()
+            return local_ip
+        except Exception:
+            return "127.0.0.1"
+
+    def _get_subnet(self) -> str:
+        ip = self._get_local_ip()
+        return ".".join(ip.split(".")[:3])
 
     # ═══════════════════════════════════════════════════════════════════════════
     #  LAYER 1: SCAPY ARP BROADCAST (catches everything)
@@ -167,7 +159,7 @@ class NetworkScanner:
             conf.verb = 0  # Suppress scapy output
 
             target = f"{subnet}.0/24"
-            self._log(f"⚡ [Layer 1] Scapy ARP broadcast → {target}")
+            self._log(f"Running Scapy ARP broadcast on {target}")
 
             # Build ARP request: broadcast Ethernet + ARP who-has
             arp_request = ARP(pdst=target)
@@ -198,14 +190,14 @@ class NetworkScanner:
                     "discovery_method": "scapy_arp",
                 })
 
-            self._log(f"   ✅ Scapy found {len(devices)} device(s)")
+            self._log(f"Scapy found {len(devices)} device(s)")
 
         except ImportError:
-            self._log("   ⚠️  Scapy not installed, skipping Layer 1")
+            self._log("Scapy not installed, skipping Layer 1")
         except PermissionError:
-            self._log("   ⚠️  Not root — Scapy ARP requires sudo, skipping Layer 1")
+            self._log("Not root — Scapy ARP requires sudo, skipping Layer 1")
         except Exception as e:
-            self._log(f"   ⚠️  Scapy error: {e}")
+            self._log(f"Scapy error: {e}")
 
         return devices
 
@@ -224,7 +216,7 @@ class NetworkScanner:
         devices = []
         try:
             target = f"{subnet}.0/24"
-            self._log(f"⚡ [Layer 2] Nmap host discovery → {target}")
+            self._log(f"Running Nmap host discovery on {target}")
 
             cmd = f"nmap -sn -T4 --max-retries 2 {target} -oX -"
             result = subprocess.run(
@@ -232,7 +224,7 @@ class NetworkScanner:
             )
 
             if result.returncode != 0 and not result.stdout:
-                self._log(f"   ⚠️  Nmap failed: {result.stderr[:100]}")
+                self._log(f"Nmap failed: {result.stderr[:100]}")
                 return devices
 
             output = result.stdout
@@ -263,21 +255,29 @@ class NetworkScanner:
                     if len(parts) == 6:
                         mac = ":".join(p.zfill(2) for p in parts)
 
-                if mac and mac not in ("ff:ff:ff:ff:ff:ff", "00:00:00:00:00:00"):
-                    devices.append({
-                        "ip": ip,
-                        "mac": mac,
-                        "discovery_method": "nmap",
-                    })
+                # Include devices even without MAC (e.g., localhost or non-root scans)
+                if mac in ("ff:ff:ff:ff:ff:ff", "00:00:00:00:00:00"):
+                    continue
 
-            self._log(f"   ✅ Nmap found {len(devices)} device(s)")
+                if not mac:
+                    # Generate a placeholder MAC from IP so device still appears
+                    octets = ip.split(".")
+                    mac = f"00:00:00:00:{int(octets[2]):02x}:{int(octets[3]):02x}"
+
+                devices.append({
+                    "ip": ip,
+                    "mac": mac,
+                    "discovery_method": "nmap",
+                })
+
+            self._log(f"Nmap found {len(devices)} device(s)")
 
         except FileNotFoundError:
-            self._log("   ⚠️  Nmap not installed, skipping Layer 2")
+            self._log("Nmap not installed, skipping Layer 2")
         except subprocess.TimeoutExpired:
-            self._log("   ⚠️  Nmap timed out, skipping Layer 2")
+            self._log("Nmap timed out, skipping Layer 2")
         except Exception as e:
-            self._log(f"   ⚠️  Nmap error: {e}")
+            self._log(f"Nmap error: {e}")
 
         return devices
 
@@ -290,7 +290,7 @@ class NetworkScanner:
         Parse both `arp -a` AND `ip neigh` to catch cached entries.
         Also does a quick ping sweep first to populate the cache.
         """
-        self._log("⚡ [Layer 3] ARP cache + ip neigh")
+        self._log("Checking ARP cache + ip neigh")
         devices = []
 
         # Quick ping sweep to populate cache
@@ -308,7 +308,7 @@ class NetworkScanner:
                     ip, mac = parsed
                     devices.append({"ip": ip, "mac": mac, "discovery_method": "arp_cache"})
         except Exception as e:
-            self._log(f"   ⚠️  arp -a error: {e}")
+            self._log(f"arp -a error: {e}")
 
         # Method B: ip neigh (Linux only, more complete)
         if self._os_type == "Linux":
@@ -319,9 +319,10 @@ class NetworkScanner:
 
                 for line in raw.splitlines():
                     # Format: 192.168.1.1 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE
+                    # Strict regex to capture IP at start
                     match = re.search(
-                        r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+dev\s+\S+\s+lladdr\s+([0-9a-fA-F:]+)',
-                        line
+                        r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+dev\s+\S+\s+lladdr\s+([0-9a-fA-F:]+)',
+                        line.strip()
                     )
                     if match:
                         ip = match.group(1)
@@ -333,7 +334,7 @@ class NetworkScanner:
                                 if not self._is_multicast_or_broadcast(ip):
                                     devices.append({"ip": ip, "mac": mac, "discovery_method": "ip_neigh"})
             except Exception as e:
-                self._log(f"   ⚠️  ip neigh error: {e}")
+                self._log(f"ip neigh error: {e}")
 
         # Method C: /proc/net/arp (Linux kernel ARP table, most raw)
         if self._os_type == "Linux":
@@ -353,7 +354,7 @@ class NetworkScanner:
             except Exception:
                 pass
 
-        self._log(f"   ✅ ARP cache found {len(devices)} entries")
+        self._log(f"ARP cache found {len(devices)} entries")
         return devices
 
     def _ping_host(self, ip: str) -> None:
@@ -369,10 +370,14 @@ class NetworkScanner:
 
     def _ping_sweep(self) -> None:
         subnet = self._get_subnet()
-        self._log(f"   ↳ Ping sweep on {subnet}.0/24...")
+        self._log(f"Ping sweep on {subnet}.0/24...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.MAX_PING_WORKERS) as executor:
             futures = [executor.submit(self._ping_host, f"{subnet}.{i}") for i in range(1, 255)]
             concurrent.futures.wait(futures, timeout=30)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    #  UNIFIED SCAN — Merges all 3 layers
+    # ═══════════════════════════════════════════════════════════════════════════
 
     # ═══════════════════════════════════════════════════════════════════════════
     #  UNIFIED SCAN — Merges all 3 layers
@@ -383,10 +388,7 @@ class NetworkScanner:
         Master discovery: runs all 3 layers, merges, deduplicates by MAC.
         """
         subnet = self._get_subnet()
-        self._log(f"\n{'═'*60}")
-        self._log(f"  SENTINEL v6.0 — 3-Layer Discovery")
-        self._log(f"  Subnet: {subnet}.0/24")
-        self._log(f"{'═'*60}\n")
+        self._log(f"Starting detailed scan on subnet: {subnet}.0/24")
 
         all_devices = []
         methods_used = []
@@ -398,7 +400,7 @@ class NetworkScanner:
             if scapy_results:
                 methods_used.append("scapy_arp")
         else:
-            self._log("⚠️  Not root — Scapy ARP scan requires sudo for full discovery")
+            self._log("Notice: Not running as root. Scapy ARP scan skipped.")
 
         # Layer 2: Nmap host discovery
         nmap_results = self._nmap_discovery(subnet)
@@ -412,36 +414,47 @@ class NetworkScanner:
         if arp_results:
             methods_used.append("arp_cache")
 
-        # Deduplicate by MAC (keep the first occurrence which is usually Scapy)
-        seen_macs = set()
-        unique_devices = []
+        # Deduplication Strategy:
+        # 1. Use a dictionary keyed by MAC address to ensure unique devices.
+        # 2. If a MAC is seen again, update the entry but keep the first seen IP (usually most reliable from active scan).
+        # 3. Filter out any entries with duplicate IPs that have different MACs (rare config error or spoofing, mostly noise).
+
+        unique_devices_map = {}
+        
         for dev in all_devices:
             mac = dev["mac"]
-            if mac not in seen_macs:
-                seen_macs.add(mac)
-                unique_devices.append(dev)
-            else:
-                # Update discovery method to show it was found by multiple methods
-                for existing in unique_devices:
-                    if existing["mac"] == mac:
-                        if dev["discovery_method"] not in existing["discovery_method"]:
-                            existing["discovery_method"] += f"+{dev['discovery_method']}"
-                        # Prefer the IP from the newer source if the existing one looks wrong
-                        break
+            ip = dev["ip"]
+            
+            # Skip invalid IPs/MACs
+            if not ip or not mac: continue
+            if ip.endswith(".0") or ip.endswith(".255"): continue
 
-        # Also deduplicate by IP (in case same device appears with different MACs — unusual but possible)
-        seen_ips = set()
+            if mac not in unique_devices_map:
+                unique_devices_map[mac] = dev
+            else:
+                # Update existing entry with new methods found
+                existing = unique_devices_map[mac]
+                if dev["discovery_method"] not in existing["discovery_method"]:
+                    existing["discovery_method"] += f"+{dev['discovery_method']}"
+
+        # Final pass: Ensure IP uniqueness. If multiple MACs claim the same IP, keep the one from active scan (scapy/nmap)
+        # or the most recent one.
         final_devices = []
-        for dev in unique_devices:
+        seen_ips = set()
+        
+        # Sort by method priority: scapy > nmap > arp
+        sorted_devices = sorted(unique_devices_map.values(), key=lambda x: (
+            0 if "scapy" in x["discovery_method"] else 
+            1 if "nmap" in x["discovery_method"] else 
+            2
+        ))
+
+        for dev in sorted_devices:
             if dev["ip"] not in seen_ips:
                 seen_ips.add(dev["ip"])
                 final_devices.append(dev)
 
-        self._log(f"\n{'─'*60}")
-        self._log(f"  RESULTS: {len(final_devices)} unique device(s)")
-        self._log(f"  Methods: {', '.join(methods_used) if methods_used else 'none'}")
-        self._log(f"  Raw hits: {len(all_devices)} → Deduplicated: {len(final_devices)}")
-        self._log(f"{'─'*60}\n")
+        self._log(f"Scan complete. Found {len(final_devices)} unique devices.")
 
         return self._build_scan_result(final_devices, methods_used)
 
@@ -525,7 +538,7 @@ class NetworkScanner:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def deep_scan(self, target_ip: str) -> dict:
-        self._log(f"🔍 Deep scanning {target_ip} with {self.MAX_PORT_WORKERS} threads...")
+        self._log(f"[>] Deep scanning {target_ip} with {self.MAX_PORT_WORKERS} threads...")
 
         hostname = "Unknown"
         try:
@@ -594,7 +607,7 @@ class NetworkScanner:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def audit_credentials(self, target_ip: str) -> dict:
-        self._log(f"🔐 Auditing credentials on {target_ip}:80...")
+        self._log(f"[>] Auditing credentials on {target_ip}:80...")
         url = f"http://{target_ip}"
         audit_results: List[dict] = []
         reachable = False
@@ -636,24 +649,37 @@ class NetworkScanner:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    scanner = NetworkScanner()
-    ip_pattern = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
+    import sys
+    
+    # Simple CLI argument parsing
+    command = "scan"
+    target = None
+    interface = None
+    
+    args = sys.argv[1:]
+    if args:
+        if args[0] == "audit":
+            command = "audit"
+            target = args[1] if len(args) > 1 else None
+        elif args[0] == "scan":
+            command = "scan"
+            if len(args) > 1:
+                interface = args[1]
+        elif re.match(r"^(?:\d{1,3}\.){3}\d{1,3}$", args[0]):
+            command = "deep"
+            target = args[0]
+        else:
+            # Assume it's an interface name if not an IP
+            interface = args[0]
+            
+    scanner = NetworkScanner(interface=interface)
 
-    if len(sys.argv) == 1:
+    if command == "scan":
         print(json.dumps(scanner.scan()))
-    elif sys.argv[1] == "audit":
-        if len(sys.argv) < 3 or not ip_pattern.match(sys.argv[2]):
+    elif command == "audit":
+        if not target:
             print(json.dumps({"error": "Usage: python3 agent.py audit <IP>"}))
         else:
-            print(json.dumps(scanner.audit_credentials(sys.argv[2])))
-    elif ip_pattern.match(sys.argv[1]):
-        print(json.dumps(scanner.deep_scan(sys.argv[1])))
-    else:
-        print(json.dumps({
-            "error": f"Unknown command: '{sys.argv[1]}'",
-            "usage": [
-                "sudo python3 agent.py              → Full discovery (3-layer)",
-                "sudo python3 agent.py <IP>          → Deep port scan",
-                "sudo python3 agent.py audit <IP>    → Credential audit",
-            ],
-        }))
+            print(json.dumps(scanner.audit_credentials(target)))
+    elif command == "deep":
+        print(json.dumps(scanner.deep_scan(target)))

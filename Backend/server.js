@@ -18,7 +18,8 @@
  *  Run:   node server.js
  */
 
-require('dotenv').config();
+// Load .env relative to this file
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -109,14 +110,27 @@ const IS_ROOT = process.getuid ? process.getuid() === 0 : false;
 const honeypotLogs = [];
 let totalDevicesLogged = 0;
 let savedTargets = {};
+let lastScanResult = null;
 
 // Load saved targets
 const targetsFile = path.join(__dirname, 'targets.json');
+const scanCacheFile = path.join(__dirname, 'scan_cache.json');
+
 if (fs.existsSync(targetsFile)) {
     try {
         savedTargets = JSON.parse(fs.readFileSync(targetsFile, 'utf8'));
     } catch (e) {
         console.error('Failed to load targets.json:', e);
+    }
+}
+
+// Load cached scan result from disk (survives server restarts)
+if (fs.existsSync(scanCacheFile)) {
+    try {
+        lastScanResult = JSON.parse(fs.readFileSync(scanCacheFile, 'utf8'));
+        console.log(`📋 Loaded cached scan: ${lastScanResult.count} devices from ${lastScanResult.timestamp}`);
+    } catch (e) {
+        console.error('Failed to load scan cache:', e);
     }
 }
 
@@ -375,6 +389,8 @@ async function saveToSupabase(deviceList) {
             ip: d.ip,
             vendor: d.vendor || 'Unknown',
             type: d.type || 'Unknown Device',
+            hostname: d.hostname || null,
+            name: d.name || null,
             last_seen: new Date().toISOString(),
         }));
 
@@ -401,7 +417,7 @@ async function saveToSupabase(deviceList) {
                 console.log(`💾 Upserted ${minimalRows.length} device(s) (minimal mode).`);
                 return { saved: minimalRows.length, error: null };
             }
-            console.error('❌ Supabase upsert error:', error.message);
+            console.error('❌ Supabase upsert error:', error.message, error.details, error.hint);
             return { saved: 0, error: error.message };
         }
 
@@ -460,15 +476,17 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', uptime: Math.floor(process.uptime()) });
 });
 
-// ── Network Scan ──────────────────────────────────────────────────────────────
 // ── Network Scan Logic (Reusable) ─────────────────────────────────────────────
 async function runNetworkScan() {
     console.log('📡 Running network scan...');
     const startTime = Date.now();
     const agentPath = path.join(__dirname, '../agent.py');
+    const iface = getNetworkInterface();
+
+    console.log(`   Target Interface: ${iface}`);
 
     return new Promise((resolve, reject) => {
-        execFile('python3', [agentPath], { timeout: 180000 }, async (error, stdout, stderr) => {
+        execFile('python3', [agentPath, iface], { timeout: 180000 }, async (error, stdout, stderr) => {
             if (stderr) console.log('Agent:', stderr.trim());
 
             if (error) {
@@ -512,6 +530,14 @@ async function runNetworkScan() {
                     timestamp: new Date().toISOString()
                 };
 
+                // Cache the scan result in memory and on disk
+                lastScanResult = result;
+                try {
+                    fs.writeFileSync(scanCacheFile, JSON.stringify(result, null, 2));
+                } catch (e) {
+                    console.error('Failed to write scan cache:', e.message);
+                }
+
                 if (io) io.emit('scan:complete', result);
 
                 // Log history (fire and forget)
@@ -544,6 +570,15 @@ app.get('/api/scan', async (req, res) => {
     }
 });
 
+// ── Cached Devices (Instant Load) ────────────────────────────────────────────
+app.get('/api/devices', (req, res) => {
+    if (lastScanResult) {
+        res.json(lastScanResult);
+    } else {
+        res.json({ status: 'no_cache', count: 0, devices: [], subnet: 'unknown', methods: [] });
+    }
+});
+
 // ── Scan History ──────────────────────────────────────────────────────────────
 app.get('/api/scan-history', async (req, res) => {
     if (!supabase) return res.json([]);
@@ -557,10 +592,51 @@ app.get('/api/scan-history', async (req, res) => {
         res.json(data);
     } catch (err) {
         console.error('Error fetching history:', err.message);
-        res.json([]); // Return empty array on error (graceful degradation)
+        res.json([]);
     }
 });
 
+
+// ── Network Mode Automation ───────────────────────────────────────────────────
+app.post('/api/network/mode', (req, res) => {
+    if (!IS_ROOT) return res.status(403).json({ error: 'Root privileges required.' });
+
+    const { mode, interface: ifaceParam } = req.body;
+    const targetMode = mode || 'managed';
+    const iface = (ifaceParam || 'wlan0').replace(/[^a-z0-9]/gi, '');
+
+    console.log(`🔄 Switching Network Mode to: ${targetMode.toUpperCase()}`);
+
+    if (targetMode === 'monitor') {
+        // Enable Monitor Mode
+        // 1. Kill interfering processes
+        // 2. Start monitor mode
+        const cmd = `airmon-ng check kill; airmon-ng start ${iface}`;
+        exec(cmd, (error, stdout, stderr) => {
+            if (error && !stdout) { // airmon-ng sometimes returns non-zero even on success?
+                console.error('Monitor enable failed:', stderr);
+                return res.status(500).json({ error: 'Failed to enable Monitor Mode', details: stderr });
+            }
+            res.json({ status: 'success', message: 'Monitor Mode Enabled. Interface might be renamed to wlan0mon.', output: stdout });
+        });
+    } else {
+        // Disable Monitor Mode (Managed)
+        // 1. Stop monitor interface(s)
+        // 2. Restart NetworkManager
+        // We try stopping both wlan0mon and wlan0 to be safe
+        const cmd = `airmon-ng stop ${iface}mon; airmon-ng stop ${iface}; service NetworkManager restart`;
+        exec(cmd, (error, stdout, stderr) => {
+            // Restarting NM logic takes time and might disconnect us.
+            // We respond immediately if possible, or accept that connection dies.
+            if (error) {
+                console.error('Managed enable failed:', stderr);
+                // We might have lost connection already, so response might fail.
+            }
+        });
+        // Respond immediately before network restart kills connection (race condition)
+        res.json({ status: 'success', message: 'Switching to Managed Mode. Connection will cycle. Please wait 10-30s.' });
+    }
+});
 
 // ── Deep Scan ─────────────────────────────────────────────────────────────────
 app.get('/api/inspect', (req, res) => {
@@ -748,17 +824,39 @@ let passiveMonitorProcess = null;
 function getNetworkInterface() {
     const { networkInterfaces } = require('os');
     const nets = networkInterfaces();
-    const preferred = ['wlan0', 'en0', 'eth0', 'wlp2s0', 'enp0s3', 'Wi-Fi'];
+    // Prioritize wlan0/wlan1 for WiFi scanning on Linux
+    const preferred = ['wlan0', 'wlan1', 'wlp2s0', 'en0', 'eth0', 'enp0s3', 'Wi-Fi'];
+
+    // 1. Try preferred interfaces first
     for (const name of preferred) {
         if (nets[name]) {
-            const hasIPv4 = nets[name].some(n => n.family === 'IPv4' && !n.internal);
-            if (hasIPv4) return name;
+            const hasIPv4 = nets[name].some(n => (n.family === 'IPv4' || n.family === 4) && !n.internal);
+            if (hasIPv4) {
+                console.log(`[NET] Selected prioritized interface: ${name}`);
+                return name;
+            }
         }
     }
-    for (const [name, addrs] of Object.entries(nets)) {
-        if (addrs.some(n => n.family === 'IPv4' && !n.internal)) return name;
+
+    // 2. Fallback: Find *any* interface with IPv4 that isn't internal
+    const fallback = Object.keys(nets).find(name =>
+        nets[name].some(n => (n.family === 'IPv4' || n.family === 4) && !n.internal && name !== 'docker0' && !name.startsWith('veth'))
+    );
+
+    if (fallback) {
+        console.log(`[NET] Selected fallback interface: ${fallback}`);
+        return fallback;
     }
-    return process.platform === 'darwin' ? 'en0' : 'wlan0';
+
+    return 'lo';
+}
+
+function getWirelessInterface() {
+    const fs = require('fs');
+    if (fs.existsSync('/sys/class/net/wlan0mon')) return 'wlan0mon';
+    if (fs.existsSync('/sys/class/net/mon0')) return 'mon0';
+    if (fs.existsSync('/sys/class/net/wlan0')) return 'wlan0';
+    return getNetworkInterface();
 }
 
 /**
@@ -1032,74 +1130,98 @@ app.get('/api/status', async (req, res) => {
 
 // ── WiFi Network Scanner ──────────────────────────────────────────────────────
 app.get('/api/wifi', (req, res) => {
-    const iface = getNetworkInterface();
-    // Try iw first (modern), fallback to iwlist
-    const cmd = `iw dev ${iface} scan 2>/dev/null || iwlist ${iface} scan 2>/dev/null`;
+    const iface = getWirelessInterface();
+    console.log(`📡 WiFi Scan requested on interface: ${iface}`);
 
-    exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
-        if (error) {
-            return res.json({ error: 'WiFi scan failed. Ensure root and wireless interface.', networks: [] });
+    // Command to get connected info
+    const connectedCmd = `iw dev ${iface} link`;
+
+    exec(connectedCmd, (err, connStdout) => {
+        let currentBssid = null;
+        if (!err && connStdout) {
+            const match = connStdout.match(/Connected to ([0-9a-f:]{17})/i);
+            if (match) currentBssid = match[1].toLowerCase();
         }
 
-        const networks = [];
-        // Parse iw scan output
-        if (stdout.includes('BSS ')) {
-            const blocks = stdout.split(/^BSS /m);
-            blocks.forEach(block => {
-                if (!block.trim()) return;
-                const bssid = block.match(/^([0-9a-f:]{17})/i);
-                const ssid = block.match(/SSID:\s*(.+)/);
-                const signal = block.match(/signal:\s*(-?\d+\.?\d*)/);
-                const freq = block.match(/freq:\s*(\d+)/);
-                const security = block.includes('RSN') ? 'WPA2/WPA3' : block.includes('WPA') ? 'WPA' : block.includes('Privacy') ? 'WEP' : 'Open';
-                const channel = block.match(/primary channel:\s*(\d+)/);
+        const cmd = `iw dev ${iface} scan 2>/dev/null || iwlist ${iface} scan 2>/dev/null`;
+        console.log(`📡 Running: ${cmd}`);
 
-                if (bssid) {
+        exec(cmd, { timeout: 30000, maxBuffer: 1024 * 1024 * 5 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`❌ WiFi Scan Error: ${error.message}`);
+                return res.json({ error: 'WiFi scan failed. Ensure connected to WiFi and running as root.', networks: [] });
+            }
+
+            const networks = [];
+            // Parse iw scan output
+            if (stdout.includes('BSS ')) {
+                const blocks = stdout.split(/^BSS /m);
+                blocks.forEach(block => {
+                    if (!block.trim()) return;
+                    const bssidMatch = block.match(/^([0-9a-f:]{17})/i);
+                    if (!bssidMatch) return;
+
+                    const bssid = bssidMatch[1].toLowerCase();
+                    const ssidMatch = block.match(/SSID:\s*(.+)/);
+                    const signalMatch = block.match(/signal:\s*(-?\d+\.?\d*)/);
+                    const freqMatch = block.match(/freq:\s*(\d+)/);
+                    const security = block.includes('RSN') ? 'WPA2/WPA3' : block.includes('WPA') ? 'WPA' : block.includes('Privacy') ? 'WEP' : 'Open';
+                    const channelMatch = block.match(/primary channel:\s*(\d+)/);
+
                     networks.push({
-                        bssid: bssid[1],
-                        ssid: ssid ? ssid[1].trim() : '(Hidden)',
-                        channel: channel ? parseInt(channel[1]) : 0,
-                        signal: signal ? parseFloat(signal[1]) : 0,
+                        bssid: bssid,
+                        ssid: ssidMatch ? ssidMatch[1].trim() : '(Hidden)',
+                        channel: channelMatch ? parseInt(channelMatch[1]) : 0,
+                        signal_dbm: signalMatch ? parseFloat(signalMatch[1]) : 0,
+                        signal_percent: signalMatch ? Math.min(100, Math.max(0, 2 * (parseFloat(signalMatch[1]) + 100))) : 0,
                         security: security,
-                        freq: freq ? parseInt(freq[1]) : 0,
+                        frequency: freqMatch ? parseInt(freqMatch[1]) : 0,
+                        connected: bssid === currentBssid
                     });
-                }
-            });
-        } else {
-            // Parse iwlist scan output
-            const cells = stdout.split(/Cell \d+/);
-            cells.forEach(cell => {
-                const address = cell.match(/Address:\s*([0-9A-Fa-f:]+)/);
-                const essid = cell.match(/ESSID:"([^"]*)"/);
-                const quality = cell.match(/Quality[=:](\d+)\/(\d+)/);
-                const signalLevel = cell.match(/Signal level[=:](-?\d+)/);
-                const channelMatch = cell.match(/Channel[=:](\d+)/);
-                const freqMatch = cell.match(/Frequency[=:](\d+\.?\d*)/);
-                const encryption = cell.includes('WPA2') ? 'WPA2' : cell.includes('WPA') ? 'WPA' : cell.includes('on') ? 'WEP' : 'Open';
+                });
+            } else {
+                // Parse iwlist scan output
+                const cells = stdout.split(/Cell \d+/);
+                cells.forEach(cell => {
+                    const addressMatch = cell.match(/Address:\s*([0-9A-Fa-f:]+)/);
+                    if (!addressMatch) return;
 
-                if (address) {
-                    const q = quality ? Math.round((parseInt(quality[1]) / parseInt(quality[2])) * 100) : 0;
+                    const bssid = addressMatch[1].toLowerCase();
+                    const essidMatch = cell.match(/ESSID:"([^"]*)"/);
+                    const qualityMatch = cell.match(/Quality[=:](\d+)\/(\d+)/);
+                    const signalMatch = cell.match(/Signal level[=:](-?\d+)/);
+                    const channelMatch = cell.match(/Channel[=:](\d+)/);
+                    const freqMatch = cell.match(/Frequency[=:](\d+\.?\d*)/);
+                    const encryption = cell.includes('WPA2') ? 'WPA2' : cell.includes('WPA') ? 'WPA' : cell.includes('on') ? 'WEP' : 'Open';
+
+                    const q = qualityMatch ? Math.round((parseInt(qualityMatch[1]) / parseInt(qualityMatch[2])) * 100) : 0;
+
                     networks.push({
-                        bssid: address[1],
-                        ssid: essid ? essid[1] : '(Hidden)',
-                        signal_dbm: signalLevel ? parseInt(signalLevel[1]) : null,
-                        signal_percent: q || (signalLevel ? Math.min(100, Math.max(0, 2 * (parseInt(signalLevel[1]) + 100))) : 0),
+                        bssid: bssid,
+                        ssid: essidMatch ? essidMatch[1] : '(Hidden)',
+                        signal_dbm: signalMatch ? parseInt(signalMatch[1]) : null,
+                        signal_percent: q || (signalMatch ? Math.min(100, Math.max(0, 2 * (parseInt(signalMatch[1]) + 100))) : 0),
                         frequency: freqMatch ? parseFloat(freqMatch[1]) * 1000 : null,
                         channel: channelMatch ? parseInt(channelMatch[1]) : null,
                         security: encryption,
+                        connected: bssid === currentBssid
                     });
-                }
+                });
+            }
+
+            // sort: connected first, then signal strength
+            networks.sort((a, b) => {
+                if (a.connected) return -1;
+                if (b.connected) return 1;
+                return b.signal_percent - a.signal_percent;
             });
-        }
 
-        // Sort by signal strength (strongest first)
-        networks.sort((a, b) => (b.signal_percent || 0) - (a.signal_percent || 0));
-
-        res.json({
-            interface: iface,
-            count: networks.length,
-            networks,
-            timestamp: new Date().toISOString(),
+            console.log(`📡 Scan complete: Found ${networks.length} networks. Connected: ${currentBssid || 'None'}`);
+            res.json({
+                interface: iface,
+                count: networks.length,
+                networks: networks
+            });
         });
     });
 });
@@ -1109,39 +1231,63 @@ app.post('/api/wifi/deauth', (req, res) => {
     // SECURITY: Root check
     if (!IS_ROOT) return res.status(403).json({ error: 'Root privileges required.' });
 
-    const { bssid, client, count, iface } = req.body;
+    try {
+        const { bssid, client, count, iface, channel } = req.body;
 
-    // Validate MACs
-    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
-    if (!bssid || !macRegex.test(bssid)) return res.status(400).json({ error: 'Invalid BSSID format.' });
-    if (client && !macRegex.test(client)) return res.status(400).json({ error: 'Invalid Client MAC format.' });
+        // Validate MACs
+        const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+        if (!bssid || !macRegex.test(bssid)) return res.status(400).json({ error: 'Invalid BSSID format.' });
+        if (client && !macRegex.test(client)) return res.status(400).json({ error: 'Invalid Client MAC format.' });
 
-    // Validate Count (Max 50 to prevent overflow/spam)
-    const pktCount = Math.min(Math.max(parseInt(count) || 5, 1), 50);
+        // Validate Count (Max 50 to prevent overflow/spam)
+        const pktCount = Math.min(Math.max(parseInt(count) || 5, 1), 50);
 
-    // Validate Interface (Allow alphanumeric + dash/underscore, default to wlan0mon)
-    // If user provided iface is empty, we try 'wlan0mon'.
-    // NOTE: Ideally we should detect monitor interface.
-    const interfaceName = (iface || 'wlan0mon').replace(/[^a-z0-9\-_]/gi, '');
-
-    console.log(`⚡ DEAUTH ATTACK: ${bssid} -> ${client || 'BROADCAST'} [${pktCount} pkts] on ${interfaceName}`);
-
-    const args = ['-0', String(pktCount), '-a', bssid];
-    if (client) args.push('-c', client);
-    args.push(interfaceName);
-
-    execFile('aireplay-ng', args, { timeout: 15000 }, (error, stdout, stderr) => {
-        if (error) {
-            console.error('Deauth failed:', stderr);
-            let msg = 'Deauth failed.';
-            if (stderr.includes('No such device')) msg += ' Interface not found.';
-            else if (stderr.includes('Monitor mode')) msg += ' Interface not in monitor mode.';
-            else if (stderr.includes('fixed channel')) msg += ' Channel mismatch (set channel first).';
-
-            return res.status(500).json({ error: msg, details: stderr.trim() });
+        // Validate Interface (Smart Detection)
+        // Use our robust helper which checks for monitor mode interfaces
+        let interfaceName = (iface || '').replace(/[^a-z0-9\-_]/gi, '');
+        if (!interfaceName || interfaceName === 'wlan0mon') {
+            interfaceName = getWirelessInterface();
         }
-        res.json({ status: 'success', message: `Sent ${pktCount} deauth packets.`, output: stdout });
-    });
+
+        console.log(`⚡ DEAUTH ATTACK: ${bssid} -> ${client || 'BROADCAST'} [${pktCount} pkts] on ${interfaceName} (CH ${channel || '?'})`);
+
+        // Helper to run airplay
+        const runDeauth = () => {
+            const args = ['-0', String(pktCount), '-a', bssid];
+            if (client) args.push('-c', client);
+            args.push(interfaceName);
+
+            execFile('aireplay-ng', args, { timeout: 15000 }, (error, stdout, stderr) => {
+                if (error) {
+                    console.error('Deauth failed:', stderr);
+                    let msg = 'Deauth failed.';
+                    if (stderr.includes('No such device')) msg += ' Interface not found.';
+                    else if (stderr.includes('Monitor mode')) msg += ' Interface not in monitor mode.';
+                    else if (stderr.includes('fixed channel')) msg += ' Channel mismatch (set channel first).';
+                    return res.status(500).json({ error: msg, details: stderr.trim() });
+                }
+                res.json({ status: 'success', message: `Sent ${pktCount} deauth packets.`, output: stdout });
+            });
+        };
+
+        // Switch Channel if provided
+        if (channel) {
+            const ch = parseInt(channel);
+            if (!isNaN(ch) && ch > 0 && ch <= 165) {
+                exec(`iwconfig ${interfaceName} channel ${ch}`, (err) => {
+                    if (err) console.error(`Failed to set channel ${ch}:`, err.message);
+                    runDeauth();
+                });
+            } else {
+                runDeauth();
+            }
+        } else {
+            runDeauth();
+        }
+    } catch (e) {
+        console.error('Deauth Handler Error:', e);
+        res.status(500).json({ error: 'Internal Server Error (Handler)', details: e.message });
+    }
 });
 
 // ── MITM Attack (Advanced) ────────────────────────────────────────────────────
@@ -1301,8 +1447,8 @@ app.get('/api/traceroute', (req, res) => {
 
     function parseTraceroute(output, res, target) {
         const stdout = output || '';
-        if (error && !stdout) {
-            return res.json({ error: 'Traceroute failed.', hops: [] });
+        if (!stdout || stdout.trim().length === 0) {
+            return res.json({ error: 'Traceroute failed (no output).', hops: [] });
         }
 
         const hops = [];
@@ -2084,7 +2230,6 @@ io.on('connection', (socket) => {
 });
 
 // ── Start Server ──────────────────────────────────────────────────────────────
-// ── Start Server ──────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Sentinel Bridge active on port ${PORT}`);
     console.log(`📡 WebSocket server ready`);
@@ -2109,18 +2254,9 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`   → Local:    http://localhost:${PORT}\n`);
 
     // Auto-start passive DNS monitor
-    // Use the global IS_ROOT check from lines 109
-    const isRoot = process.getuid && process.getuid() === 0;
-    if (isRoot) {
-        // We need to make sure startPassiveMonitor is defined or imported. 
-        // It seems it was a global function in original file? 
-        // I should check if it exists. If not, I'll log a warning.
-        if (typeof startPassiveMonitor !== 'undefined') {
-            startPassiveMonitor();
-        } else {
-            console.log('⚠️  startPassiveMonitor function not found.');
-        }
+    if (IS_ROOT) {
+        startPassiveMonitor();
     } else {
-        console.log('⚠️  Not root — passive DNS monitor requires sudo. Run: sudo node Backend/server.js');
+        console.log('⚠️  Not root — passive DNS monitor requires sudo.');
     }
 });

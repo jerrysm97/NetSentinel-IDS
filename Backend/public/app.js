@@ -28,12 +28,12 @@ async function safeFetch(url, options) {
 const socket = io();
 
 socket.on('connect', () => {
-    log('🔌 Connected to Sentinel Core via WebSocket');
+    log('Connected to Sentinel Core via WebSocket');
 });
 
 socket.on('scan:complete', (data) => {
     if (!data || data.status !== 'success') return;
-    log(`📡 Real-time update: ${data.count} devices found.`);
+    log(`[NET] Real-time update: ${data.count} devices found.`);
 
     currentDevices = data.devices;
     renderDevices(data.devices);
@@ -53,11 +53,32 @@ document.addEventListener('DOMContentLoaded', () => {
     initMatrixRain();
     initRadarSweep();
     updateStats();
-    scanNetwork();
+
+    // Load cached devices instantly, then trigger full scan in background
+    loadCachedDevices().then(() => scanNetwork());
 
     // Auto-refresh stats
     setInterval(updateStats, 5000);
 });
+
+async function loadCachedDevices() {
+    try {
+        const data = await safeFetch('/api/devices');
+        if (data.status !== 'no_cache' && data.devices && data.devices.length > 0) {
+            currentDevices = data.devices;
+            renderDevices(data.devices);
+            renderTargets();
+            renderRadar(data.devices);
+            document.getElementById('deviceCount').innerText = data.count;
+            document.getElementById('subnetInfo').innerText = data.subnet;
+            const methodsEl = document.getElementById('scanMethods');
+            if (methodsEl && data.methods) methodsEl.innerText = data.methods.join(' + ') + ' (cached)';
+            log(`Loaded ${data.count} cached devices from previous scan.`);
+        }
+    } catch (e) {
+        // Silently continue to live scan
+    }
+}
 
 // ══ MATRIX RAIN ═════════════════════════════════════════════════════════════
 function initMatrixRain() {
@@ -93,11 +114,13 @@ function initMatrixRain() {
 
 // ══ RADAR SWEEP ═════════════════════════════════════════════════════════════
 function initRadarSweep() {
-    setInterval(() => {
+    function animate() {
         radarAngle += 0.02;
         if (radarAngle > Math.PI * 2) radarAngle -= Math.PI * 2;
         if (currentDevices.length > 0) renderRadar(currentDevices);
-    }, 50);
+        requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
 }
 
 // ══ NAVIGATION ══════════════════════════════════════════════════════════════
@@ -141,7 +164,7 @@ async function scanNetwork() {
             const methodsEl = document.getElementById('scanMethods');
             if (methodsEl && data.methods) methodsEl.innerText = data.methods.join(' + ');
             if (statusEl) { statusEl.innerText = 'IDLE'; statusEl.className = 'badge'; }
-            log(`Scan complete. ${data.count} devices found on ${data.subnet} [${(data.methods || ['passive']).join('+')}]`);
+            log(`Scan complete. ${data.count} devices found on ${data.subnet}`);
         } else {
             throw new Error(data.message || 'Unknown error');
         }
@@ -206,22 +229,27 @@ function createDeviceCard(device) {
             ${device.discovery_method ? `<span class="tag" style="background:rgba(0,242,255,0.1);color:var(--accent);font-size:8px;">${device.discovery_method}</span>` : ''}
         </div>
         <div style="margin-top:8px;display:flex;gap:6px;">
-            <button class="btn btn-danger" onclick="event.stopPropagation();autoReconIP('${device.ip}')" style="flex:1;font-size:9px;padding:4px 8px;">⚡ RECON</button>
+            <button class="btn btn-danger" onclick="event.stopPropagation();autoReconIP('${device.ip}')" style="flex:1;font-size:9px;padding:4px 8px;">RECON</button>
         </div>`;
     return card;
 }
 
 function getIconForType(type) {
-    if (!type) return '🔌';
-    if (type.includes('Apple')) return '';
-    if (type.includes('Android') || type.includes('Mobile')) return '📱';
-    if (type.includes('PC') || type.includes('Laptop')) return '💻';
-    if (type.includes('IoT') || type.includes('Amazon')) return '🏠';
-    if (type.includes('Router') || type.includes('Network')) return '🌐';
-    if (type.includes('Game') || type.includes('Console')) return '🎮';
-    if (type.includes('Camera')) return '📷';
-    if (type.includes('Printer')) return '🖨️';
-    return '🔌';
+    // Return SVG icons instead of emojis
+    const laptop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>';
+    const phone = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>';
+    const server = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>';
+    const router = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="13" width="20" height="8" rx="2" /><path d="M6 13V10" /><path d="M18 13V10" /><path d="M6 7l6-3 6 3" /></svg>';
+    const iot = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+    const generic = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
+    if (!type) return generic;
+    if (type.includes('Apple') || type.includes('Android') || type.includes('Mobile')) return phone;
+    if (type.includes('PC') || type.includes('Laptop') || type.includes('Desktop')) return laptop;
+    if (type.includes('Server') || type.includes('Linux')) return server;
+    if (type.includes('Router') || type.includes('Network') || type.includes('Gateway')) return router;
+    if (type.includes('IoT') || type.includes('Home')) return iot;
+    return generic;
 }
 
 // ══ RADAR ════════════════════════════════════════════════════════════════════
@@ -229,60 +257,93 @@ function renderRadar(devices) {
     const canvas = document.getElementById('radarCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const w = canvas.parentElement.offsetWidth;
-    const h = canvas.parentElement.offsetHeight;
-    canvas.width = w; canvas.height = h;
-    const cx = w / 2, cy = h / 2;
-    const maxR = Math.min(w, h) / 2 - 20;
 
-    ctx.clearRect(0, 0, w, h);
+    // Handle retina/high-DPI
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
 
-    // Grid circles
-    ctx.strokeStyle = 'rgba(0, 242, 255, 0.15)'; ctx.lineWidth = 1;
-    [0.3, 0.6, 0.9].forEach(s => { ctx.beginPath(); ctx.arc(cx, cy, maxR * s, 0, Math.PI * 2); ctx.stroke(); });
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const maxR = Math.min(rect.width, rect.height) / 2 - 20;
+
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    // Grid circles (Concentric rings)
+    ctx.strokeStyle = 'rgba(0, 242, 255, 0.1)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75, 1.0].forEach(s => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, maxR * s, 0, Math.PI * 2);
+        ctx.stroke();
+    });
 
     // Crosshairs
-    ctx.beginPath(); ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
-    ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+    ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+    ctx.stroke();
 
-    // Sweep gradient
-    const grad = ctx.createConicalGradient ? null : null; // fallback
-    ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, maxR, radarAngle - 0.4, radarAngle);
+    // Rotating Sweep (Gradient)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(radarAngle);
+
+    const grad = ctx.createLinearGradient(0, 0, maxR, 0);
+    grad.addColorStop(0, 'rgba(0, 242, 255, 0)');
+    grad.addColorStop(1, 'rgba(0, 242, 255, 0.15)');
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, maxR, -0.2, 0);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(0, 242, 255, 0.08)';
+    ctx.fillStyle = grad;
     ctx.fill();
 
-    // Sweep line
-    ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(radarAngle) * maxR, cy + Math.sin(radarAngle) * maxR);
-    ctx.strokeStyle = 'rgba(0, 242, 255, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+    // Lead line
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(maxR, 0);
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00f2ff';
+    ctx.stroke();
 
-    // Device blips — positioned by IP octet (deterministic, no fake signal)
+    ctx.restore();
+
+    // Device blips
     devices.forEach(d => {
+        // Deterministic position based on IP
         const octets = d.ip.split('.').map(Number);
         const lastOctet = octets[3] || 1;
-        // Distance from center based on last octet (1-254 mapped to 20%-90% of radius)
-        const dist = maxR * (0.2 + (lastOctet / 254) * 0.7);
-        const ipSum = octets.reduce((a, b) => a + b, 0);
-        const angle = (ipSum % 360) * (Math.PI / 180);
+        const dist = maxR * (0.2 + (lastOctet / 255) * 0.7);
+        const angle = (lastOctet * 137.5) * (Math.PI / 180); // Golden angle distribution
+
         const x = cx + Math.cos(angle) * dist;
         const y = cy + Math.sin(angle) * dist;
 
-        // Glow — color by device type
-        const isGateway = d.type === 'gateway' || d.ip.endsWith('.1') || d.ip.endsWith('.254');
-        ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = isGateway ? 'rgba(0,242,255,0.2)' : 'rgba(0,242,255,0.1)';
-        ctx.fill();
+        const isGateway = d.ip.endsWith('.1') || d.ip.endsWith('.254');
 
         // Dot
-        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = isGateway ? '#00f2ff' : '#ffd700';
+        ctx.beginPath();
+        ctx.arc(x, y, isGateway ? 4 : 2, 0, Math.PI * 2);
+        ctx.fillStyle = isGateway ? '#fff' : '#00f2ff';
+        ctx.shadowBlur = isGateway ? 10 : 5;
+        ctx.shadowColor = '#00f2ff';
         ctx.fill();
 
-        // Label
-        ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '9px monospace';
-        ctx.fillText(d.ip.split('.').pop(), x + 8, y + 3);
+        // Ring
+        ctx.beginPath();
+        ctx.arc(x, y, isGateway ? 8 : 4, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 242, 255, ${Math.random() * 0.3 + 0.1})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
     });
 }
 
@@ -466,14 +527,17 @@ async function scanWifi() {
             }
 
             const secClass = net.security === 'Open' ? 'open' : 'secure';
+            const connectedClass = net.connected ? 'connected-wifi' : '';
+            const connectedBadge = net.connected ? '<span class="badge" style="background:var(--accent);color:#000;font-weight:700;margin-left:8px;">CONNECTED</span>' : '';
+
             html += `
-                <div class="wifi-card">
+                <div class="wifi-card ${connectedClass}" style="${net.connected ? 'border-color:var(--accent);background:rgba(0,242,255,0.05);' : ''}">
                     <div class="wifi-info">
-                        <h4>${net.ssid}</h4>
+                        <h4>${net.ssid} ${connectedBadge}</h4>
                         <span>${net.bssid} • CH ${net.channel || '?'} • ${net.signal_dbm || '?'} dBm</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:12px;">
-                        <button class="btn btn-danger" onclick="deauthNetwork('${net.bssid}')" style="font-size:10px;padding:4px 8px;">⚡ DEAUTH</button>
+                        <button class="btn btn-danger" onclick="deauthNetwork('${net.bssid}', '${net.channel}')" style="font-size:10px;padding:4px 8px;">DEAUTH</button>
                         <span class="security-badge ${secClass}">${net.security}</span>
                         <div class="wifi-signal">${barsHtml}</div>
                         <span style="font-size:11px;color:var(--accent);font-weight:700;">${net.signal_percent}%</span>
@@ -489,28 +553,27 @@ async function scanWifi() {
     }
 }
 
-async function deauthNetwork(bssid) {
-    if (!confirm(`⚠️ ATTACK WARNING ⚠️\n\nAre you authorized to test this network (${bssid})?\n\nThis will disconnect clients temporarily.`)) return;
+async function deauthNetwork(bssid, channel) {
+    if (!confirm(`ATTACK WARNING\n\nAre you authorized to test this network (${bssid})?\n\nThis will disconnect clients temporarily.`)) return;
 
     const count = prompt('How many deauth packets? (Default 10, Max 50)', '10');
     if (count === null) return;
 
-    log(`Initiating Deauth attack on ${bssid}...`);
+    log(`Initiating Deauth attack on ${bssid} (CH ${channel})...`);
     try {
-        const res = await fetch('/api/wifi/deauth', {
+        const data = await safeFetch('/api/wifi/deauth', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bssid, count: parseInt(count) || 10 })
+            body: JSON.stringify({ bssid, channel, count: parseInt(count) || 10 })
         });
-        const data = await res.json();
+
         if (data.status === 'success') {
-            log(`✅ Attack Sent: ${data.message}`);
+            log(`[>] Attack Sent: ${data.message}`);
             alert(`Attack Sent!\n${data.message}`);
         } else {
             throw new Error(data.error || 'Unknown error');
         }
     } catch (e) {
-        log(`❌ Attack Failed: ${e.message}`);
+        log(`[!] Attack Failed: ${e.message}`);
         alert(`Attack Failed:\n${e.message}\n\nCheck if interface is in Monitor Mode?\n(e.g., airmon-ng start wlan0)`);
     }
 }
@@ -600,7 +663,7 @@ async function runVulnScan() {
             </div></div>`;
 
         if ((data.vulnerabilities || []).length > 0) {
-            html += `<div class="tool-panel"><h3 style="color:var(--danger);">🚨 Vulnerabilities Found (${data.vulnerabilities.length})</h3>
+            html += `<div class="tool-panel"><h3 style="color:var(--danger);">[!] Vulnerabilities Found (${data.vulnerabilities.length})</h3>
                 <table class="data-table"><thead><tr><th>CVE</th><th>PORT</th><th>SERVICE</th><th>SEVERITY</th><th>DETAIL</th></tr></thead><tbody>`;
             data.vulnerabilities.forEach(v => {
                 html += `<tr><td>${v.cve || '—'}</td><td>${v.port || '—'}</td><td>${v.service || '—'}</td>
@@ -610,7 +673,7 @@ async function runVulnScan() {
         }
 
         if (data.risky_ports.length > 0) {
-            html += `<div class="tool-panel" style="margin-top:12px;"><h3 style="color:var(--warning);">⚠️ Risky Open Ports</h3>
+            html += `<div class="tool-panel" style="margin-top:12px;"><h3 style="color:var(--warning);">[!] Risky Open Ports</h3>
                 <table class="data-table"><thead><tr><th>PORT</th><th>SERVICE</th><th>RISK</th><th>REASON</th></tr></thead><tbody>`;
             data.risky_ports.forEach(p => {
                 html += `<tr><td>${p.port}</td><td>${p.service}</td><td><span class="sev ${p.risk.toLowerCase()}">${p.risk}</span></td><td>${p.reason}</td></tr>`;
@@ -619,7 +682,7 @@ async function runVulnScan() {
         }
 
         if (data.open_ports.length > 0) {
-            html += `<div class="tool-panel" style="margin-top:12px;"><h3>📡 All Open Ports (${data.open_ports.length})</h3>
+            html += `<div class="tool-panel" style="margin-top:12px;"><h3>[+] All Open Ports (${data.open_ports.length})</h3>
                 <table class="data-table"><thead><tr><th>PORT</th><th>PROTOCOL</th><th>SERVICE</th></tr></thead><tbody>`;
             data.open_ports.forEach(p => {
                 html += `<tr><td>${p.port}</td><td>${p.protocol}</td><td>${p.service}</td></tr>`;
@@ -783,10 +846,10 @@ async function loadSystemInfo() {
             <div class="sys-card"><div class="sys-label">UPTIME</div><div class="sys-value green">${d.uptime_human || formatDuration(d.uptime_seconds)}</div></div>
             <div class="sys-card"><div class="sys-label">LOAD AVG</div><div class="sys-value">${d.load_average ? d.load_average.map(l => l.toFixed(2)).join(' ') : '?'}</div></div>
             <div class="sys-card"><div class="sys-label">SERVER UPTIME</div><div class="sys-value accent">${formatDuration(d.server_uptime_seconds)}</div></div>
-            <div class="sys-card"><div class="sys-label">ROOT ACCESS</div><div class="sys-value ${d.is_root ? 'green' : ''}">${d.is_root ? '✅ YES' : '❌ NO'}</div></div>
+            <div class="sys-card"><div class="sys-label">ROOT ACCESS</div><div class="sys-value ${d.is_root ? 'green' : ''}">${d.is_root ? 'YES' : 'NO'}</div></div>
         </div>
 
-        <div class="tool-panel" style="margin-top:16px;"><h3>🌐 Network Interfaces</h3>
+        <div class="tool-panel" style="margin-top:16px;"><h3>[NET] Network Interfaces</h3>
             <table class="data-table"><thead><tr><th>INTERFACE</th><th>ADDRESS</th><th>NETMASK</th><th>MAC</th></tr></thead><tbody>`;
 
         for (const [name, addrs] of Object.entries(d.network_interfaces || {})) {
@@ -801,7 +864,7 @@ async function loadSystemInfo() {
         const arpRes = await fetch('/api/arp-table');
         const arpData = await arpRes.json();
         if (arpData.entries && arpData.entries.length > 0) {
-            let arpHtml = `<div class="tool-panel"><h3>📋 ARP Table (${arpData.count} entries)</h3>
+            let arpHtml = `<div class="tool-panel"><h3>ARP Table (${arpData.count} entries)</h3>
                 <table class="data-table"><thead><tr><th>IP</th><th>MAC</th><th>INTERFACE</th><th>STATE</th></tr></thead><tbody>`;
             arpData.entries.forEach(e => {
                 arpHtml += `<tr><td>${e.ip}</td><td style="font-family:monospace;">${e.mac}</td><td>${e.interface}</td><td>${e.state || e.type}</td></tr>`;
@@ -814,7 +877,7 @@ async function loadSystemInfo() {
         const portsRes = await fetch('/api/local-ports');
         const portsData = await portsRes.json();
         if (portsData.ports && portsData.ports.length > 0) {
-            let portsHtml = `<div class="tool-panel"><h3>🔓 Open Ports on This Machine (${portsData.count})</h3>
+            let portsHtml = `<div class="tool-panel"><h3>Open Ports on This Machine (${portsData.count})</h3>
                 <table class="data-table"><thead><tr><th>PORT</th><th>ADDRESS</th><th>PROCESS</th><th>PID</th></tr></thead><tbody>`;
             portsData.ports.forEach(p => {
                 portsHtml += `<tr><td style="font-weight:700;color:var(--accent);">${p.port}</td><td>${p.address}</td><td>${p.process}</td><td>${p.pid || '—'}</td></tr>`;
@@ -865,17 +928,17 @@ async function updateFootprint() {
         keys.sort((a, b) => (domains[b].last_seen || 0) - (domains[a].last_seen || 0));
 
         let html = `<div class="fp-summary">
-            <span>📊 <b>${keys.length}</b> domains</span>
-            <span>💾 <b>${formatBytes(fp.total_bytes || 0)}</b></span>
-            <span>📋 <b>${(fp.sessions || []).length}</b> sessions</span></div>`;
+            <span><b>${keys.length}</b> domains</span>
+            <span><b>${formatBytes(fp.total_bytes || 0)}</b></span>
+            <span><b>${(fp.sessions || []).length}</b> sessions</span></div>`;
 
         keys.forEach(domain => {
             const d = domains[domain];
             const dur = d.last_seen && d.first_seen ? formatDuration(d.last_seen - d.first_seen) : '-';
             const last = d.last_seen ? new Date(d.last_seen * 1000).toLocaleTimeString() : '-';
             html += `<div class="fp-domain-card">
-                <div class="fp-domain-header"><span class="fp-domain-name">🌐 ${domain}</span><span class="fp-domain-visits">${d.visit_count || 0}×</span></div>
-                <div class="fp-domain-stats"><span>⏱ ${dur}</span><span>💾 ${formatBytes(d.bytes_total || 0)}</span><span>🕐 ${last}</span></div></div>`;
+                <div class="fp-domain-header"><span class="fp-domain-name">${domain}</span><span class="fp-domain-visits">${d.visit_count || 0}×</span></div>
+                <div class="fp-domain-stats"><span>${dur}</span><span>${formatBytes(d.bytes_total || 0)}</span><span>${last}</span></div></div>`;
         });
         el.innerHTML = html;
     } catch (e) { }
@@ -914,10 +977,11 @@ async function renderGlobalFootprint() {
                 <div style="display:none;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1);margin-top:10px;">
                     ${keys.map(d => {
                 const dm = domains[d];
-                return `<div class="fp-domain-card"><div class="fp-domain-header"><span class="fp-domain-name">🌐 ${d}</span><span class="fp-domain-visits">${dm.visit_count}×</span></div>
-                    <div class="fp-domain-stats"><span>⏱ ${formatDuration((dm.last_seen || 0) - (dm.first_seen || 0))}</span><span>💾 ${formatBytes(dm.bytes_total)}</span></div></div>`;
+                return `<div class="fp-domain-card">
+                            <div class="fp-domain-header"><span class="fp-domain-name">${d}</span><span class="fp-domain-visits">${dm.visit_count}×</span></div>
+                            <div class="fp-domain-stats"><span>${formatDuration((dm.last_seen || 0) - (dm.first_seen || 0))}</span><span>${formatBytes(dm.bytes_total)}</span></div>
+                        </div>`;
             }).join('')}
-                    <div style="margin-top:10px;text-align:right;"><span class="btn btn-secondary" onclick="window.open('/api/footprint?ip=${ip}','_blank')" style="font-size:10px;">RAW JSON</span></div>
                 </div>
             </div>`;
         });
@@ -946,7 +1010,7 @@ function log(msg) {
     if (!container) return;
     const el = document.createElement('div');
     el.className = 'log-line';
-    el.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+    el.innerHTML = `<span class="timestamp">${new Date().toLocaleTimeString()}</span> ${msg}`;
     container.appendChild(el);
     if (container.parentElement) container.parentElement.scrollTop = container.parentElement.scrollHeight;
 }
@@ -1258,6 +1322,9 @@ async function loadScanHistory() {
 // ══ TOPOLOGY ════════════════════════════════════════════════════════════════
 let cy = null;
 
+// ══ TOPOLOGY ════════════════════════════════════════════════════════════════
+
+
 function renderTopology(devices) {
     if (!devices) devices = currentDevices;
     const container = document.getElementById('cy');
@@ -1266,26 +1333,39 @@ function renderTopology(devices) {
     // Build Graph Elements
     const elements = [];
 
-    // Virtual Gateway Node (Center)
+    // Gateway Node
     elements.push({
         data: { id: 'gateway', label: 'GATEWAY', type: 'router' },
-        classes: 'router'
+        classes: 'gateway'
     });
 
     devices.forEach(d => {
+        const id = d.mac || d.ip;
+        // Determine type class
+        let typeClass = 'generic';
+        if (d.type) {
+            if (d.type.includes('Mobile') || d.type.includes('Phone')) typeClass = 'mobile';
+            else if (d.type.includes('PC') || d.type.includes('Desktop')) typeClass = 'desktop';
+            else if (d.type.includes('IoT')) typeClass = 'iot';
+        }
+
         elements.push({
             data: {
-                id: d.mac,
+                id: id,
                 label: d.name || d.hostname || d.ip,
+                ip: d.ip,
+                vendor: d.vendor,
                 type: d.type
-            }
+            },
+            classes: typeClass
         });
 
         elements.push({
             data: {
-                source: d.mac,
+                source: id,
                 target: 'gateway'
-            }
+            },
+            classes: 'link'
         });
     });
 
@@ -1298,76 +1378,121 @@ function renderTopology(devices) {
         cy = cytoscape({
             container: container,
             elements: elements,
+            wheelSensitivity: 0.2,
             style: [
                 {
                     selector: 'node',
                     style: {
-                        'background-color': '#1a1a20',
+                        'background-color': '#111',
                         'border-width': 2,
                         'border-color': '#00f2ff',
                         'label': 'data(label)',
-                        'color': '#aaa',
+                        'color': '#00f2ff',
                         'font-size': '10px',
-                        'font-family': 'monospace',
+                        'font-family': 'JetBrains Mono',
                         'text-valign': 'bottom',
-                        'text-margin-y': 5,
-                        'width': 30,
-                        'height': 30
+                        'text-margin-y': 8,
+                        'width': 40,
+                        'height': 40,
+                        'text-background-opacity': 0,
+                        'text-shadow-blur': 4,
+                        'text-shadow-color': '#000',
+                        'text-shadow-opacity': 1,
+                        'overlay-padding': 6,
+                        'overlay-color': '#00f2ff',
+                        'overlay-opacity': 0
                     }
                 },
                 {
-                    selector: '.router',
+                    selector: 'node:selected',
                     style: {
-                        'background-color': '#ff0055',
-                        'border-color': '#ff0055',
-                        'color': '#fff',
-                        'width': 45,
-                        'height': 45,
-                        'font-weight': 'bold'
+                        'border-color': '#fff',
+                        'border-width': 3,
+                        'shadow-blur': 10,
+                        'shadow-color': '#00f2ff',
+                        'overlay-opacity': 0.2
                     }
+                },
+                {
+                    selector: '.gateway',
+                    style: {
+                        'background-color': '#00f2ff',
+                        'border-color': '#fff',
+                        'width': 60,
+                        'height': 60,
+                        'color': '#fff',
+                        'font-weight': 'bold',
+                        'text-margin-y': 10
+                    }
+                },
+                {
+                    selector: '.mobile',
+                    style: { 'shape': 'rectangle', 'width': 25, 'height': 40, 'border-radius': 4 }
+                },
+                {
+                    selector: '.desktop',
+                    style: { 'shape': 'rectangle', 'width': 50, 'height': 35 }
+                },
+                {
+                    selector: '.iot',
+                    style: { 'shape': 'diamond', 'width': 35, 'height': 35 }
                 },
                 {
                     selector: 'edge',
                     style: {
                         'width': 1,
-                        'line-color': 'rgba(0, 242, 255, 0.2)',
-                        'curve-style': 'bezier'
+                        'line-color': '#333',
+                        'curve-style': 'bezier',
+                        'target-arrow-shape': 'none'
                     }
                 }
             ],
             layout: {
                 name: 'concentric',
                 fit: true,
-                padding: 50,
+                padding: 60,
                 startAngle: 3 / 2 * Math.PI,
-                sweep: undefined,
-                clockwise: true,
-                equidistant: false,
-                minNodeSpacing: 30,
-                boundingBox: undefined,
-                avoidOverlap: true,
-                nodeDimensionsIncludeLabels: false,
-                height: undefined,
-                width: undefined,
-                spacingFactor: undefined,
+                minNodeSpacing: 50,
                 concentric: function (node) {
                     return node.id() === 'gateway' ? 2 : 1;
                 },
-                levelWidth: function (nodes) {
-                    return 1;
-                },
+                levelWidth: function () { return 1; },
                 animate: true,
-                animationDuration: 500,
-                animationEasing: undefined,
-                animateFilter: function (node, i) { return true; },
-                ready: undefined,
-                stop: undefined,
-                transform: function (node, position) { return position; }
+                animationDuration: 800,
+                animationEasing: 'ease-out-cubic'
             }
         });
+
+        // Hover events
+        cy.on('mouseover', 'node', function (e) {
+            e.target.style({
+                'border-color': '#fff',
+                'text-background-opacity': 0.8,
+                'text-background-color': '#000',
+                'z-index': 9999
+            });
+            document.body.style.cursor = 'pointer';
+        });
+
+        cy.on('mouseout', 'node', function (e) {
+            e.target.style({
+                'border-color': '#00f2ff',
+                'text-background-opacity': 0,
+                'z-index': 1
+            });
+            document.body.style.cursor = 'default';
+        });
+
+        cy.on('tap', 'node', function (e) {
+            const node = e.target;
+            // Find device in currentDevices by IP or MAC
+            const dev = currentDevices.find(d => d.ip === node.data('ip') || d.mac === node.data('id'));
+            if (dev) openDeviceModal(dev);
+        });
+
     } catch (e) {
-        console.error('Cytoscape init error:', e);
-        container.innerHTML = '<div class="empty-state">Error loading topology visualization.</div>';
+        console.error('Topology error:', e);
+        container.innerHTML = '<div class="empty-state">Topology render failed.</div>';
     }
 }
 // ══ ATTACK LAB (MITM) ═══════════════════════════════════════════════════════
@@ -1439,5 +1564,60 @@ async function pollAttackLogs() {
         }
     } catch (e) {
         console.log('Log poll error', e);
+    }
+}
+
+// ══ NETWORK MODE CONTROL ════════════════════════════════════════════════════
+let currentNetworkMode = 'managed';
+
+async function toggleNetworkMode() {
+    const btn = document.getElementById('modeSwitchBtn');
+    const targetMode = currentNetworkMode === 'managed' ? 'monitor' : 'managed';
+
+    // Warning
+    if (targetMode === 'monitor') {
+        if (!confirm('ENTER MONITOR MODE?\n\n- You will LOSE Internet connection.\n- "Connected Devices" scan will stop working.\n- Required for Deauth/Handshake attacks.\n\nProceed?')) return;
+    } else {
+        if (!confirm('RESTORE MANAGED MODE?\n\n- Internet connection will be restored.\n- Monitor Mode attacks will stop.\n- Connection interrupt: 10-30s.\n\nProceed?')) return;
+    }
+
+    // UI Feedback
+    btn.innerHTML = `SWITCHING...`;
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/network/mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: targetMode })
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            currentNetworkMode = targetMode;
+            if (targetMode === 'monitor') {
+                btn.innerHTML = `MODE: MONITOR`;
+                btn.className = 'btn btn-danger';
+                alert('Monitor Mode Enabled.\n\nProceed to Attack Lab for Deauth attacks.');
+            } else {
+                btn.innerHTML = `MODE: MANAGED`;
+                btn.className = 'btn btn-secondary';
+                alert('Switching to Managed Mode.\n\nPlease wait 30s for WiFi to reconnect, then reload the page.');
+            }
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (e) {
+        alert('Mode Switch Failed: ' + e.message);
+        // Reset UI
+        if (currentNetworkMode === 'managed') {
+            btn.innerHTML = `MODE: MANAGED`;
+            btn.className = 'btn btn-secondary';
+        } else {
+            btn.innerHTML = `MODE: MONITOR`;
+            btn.className = 'btn btn-danger';
+        }
+    } finally {
+        btn.disabled = false;
     }
 }

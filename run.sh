@@ -61,5 +61,14 @@ echo -e "   Open: ${CYAN}http://localhost:3000${NC}"
 echo -e "   Phone: ${CYAN}http://${LOCAL_IP}:3000${NC}"
 echo ""
 
+# 6. Auto-open browser
+if [ -n "$SUDO_USER" ]; then
+    # Run as the original user (not root)
+    sudo -u $SUDO_USER xdg-open "http://localhost:3000" >/dev/null 2>&1 &
+else
+    # Fallback if running as root directly (e.g. Kali root)
+    xdg-open "http://localhost:3000" >/dev/null 2>&1 &
+fi
+
 cd "$SCRIPT_DIR/Backend"
 node server.js
